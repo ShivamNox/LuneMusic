@@ -1444,7 +1444,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Load More Button */
         .load-more-container {
             text-align: center;
             padding: 2rem 1rem;
@@ -1919,9 +1918,8 @@
         const audio = document.getElementById('audioPlayer');
         let currentPlaylistForAdd = null;
         
-        // Context for current view
         let currentContext = {
-            type: null, // 'playlist', 'album', 'artist', 'search', 'myplaylist'
+            type: null,
             id: null,
             url: null,
             name: null,
@@ -2068,7 +2066,6 @@
                 return;
             }
 
-            // Reset context
             currentContext = {
                 type: 'search',
                 id: null,
@@ -2131,7 +2128,6 @@
                     <span><i class="fas fa-check-circle"></i> Showing ${data.data.results.length} of ${total > 0 ? total : data.data.results.length} results</span>
                 `;
                 
-                // Show load more only for search results
                 if (currentContext.hasMore && type !== 'albums' && type !== 'playlists' && type !== 'artists') {
                     document.getElementById('loadMoreContainer').classList.add('active');
                 }
@@ -2141,7 +2137,6 @@
             }
         }
 
-        // Load more for search results only
         async function loadMore() {
             if (currentContext.isLoading || !currentContext.hasMore) return;
             
@@ -2152,11 +2147,12 @@
             btn.disabled = true;
             btnText.innerHTML = '<div class="spinner"></div> Loading...';
             
+            currentContext.currentPage++;
+            
+            let endpoint = '';
+            let data = null;
+            
             if (currentContext.type === 'search') {
-                // Search results pagination
-                currentContext.currentPage++;
-                
-                let endpoint = '';
                 const { query, searchType, currentPage } = currentContext;
                 
                 switch(searchType) {
@@ -2167,7 +2163,7 @@
                         endpoint = `/api/search?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`;
                 }
                 
-                const data = await fetchAPI(endpoint);
+                data = await fetchAPI(endpoint);
                 
                 if (data?.data?.results && data.data.results.length > 0) {
                     if (searchType === 'songs') {
@@ -2187,11 +2183,11 @@
                     currentContext.hasMore = false;
                 }
             } else if (currentContext.type === 'playlist') {
-                // Playlist pagination
-                currentContext.currentPage++;
+                // FIXED: Playlist pagination with link parameter
+                endpoint = `/api/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
+                console.log('Loading playlist page:', endpoint);
                 
-                const endpoint = `/api/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
-                const data = await fetchAPI(endpoint);
+                data = await fetchAPI(endpoint);
                 
                 if (data?.data?.songs && data.data.songs.length > 0) {
                     currentContext.songs = [...currentContext.songs, ...data.data.songs];
@@ -2206,11 +2202,10 @@
                     currentContext.hasMore = false;
                 }
             } else if (currentContext.type === 'artist') {
-                // Artist songs pagination
-                currentContext.currentPage++;
+                endpoint = `/api/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
+                console.log('Loading artist page:', endpoint);
                 
-                const endpoint = `/api/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
-                const data = await fetchAPI(endpoint);
+                data = await fetchAPI(endpoint);
                 
                 if (data?.data?.songs && data.data.songs.length > 0) {
                     currentContext.songs = [...currentContext.songs, ...data.data.songs];
@@ -2228,6 +2223,7 @@
             
             if (!currentContext.hasMore) {
                 document.getElementById('loadMoreContainer').classList.remove('active');
+                showToast('All songs loaded', 'success');
             }
             
             btn.disabled = false;
@@ -2435,7 +2431,6 @@
             grid.innerHTML = append ? grid.innerHTML + resultsHTML : resultsHTML;
         }
 
-        // Index-based functions to avoid event propagation issues
         function playSongByIndex(index) {
             if (currentContext.songs[index]) {
                 playSongFromData(currentContext.songs[index], index);
@@ -2451,11 +2446,6 @@
         function toggleFavoriteSongByIndex(index) {
             if (currentContext.songs[index]) {
                 toggleFavoriteSong(currentContext.songs[index]);
-                // Refresh display to update heart icon
-                const gridId = document.querySelector('.content-section.active .grid')?.id;
-                if (gridId && currentContext.type !== 'search') {
-                    displaySongs(currentContext.songs, gridId);
-                }
             }
         }
 
@@ -2516,7 +2506,10 @@
                 isLoading: false
             };
             
+            // FIXED: Use link parameter for playlists
             const endpoint = `/api/playlists?id=${playlistId}&page=0&limit=20`;
+            console.log('Loading playlist:', endpoint);
+            
             const data = await fetchAPI(endpoint);
             
             if (data?.data?.songs) {
@@ -2531,6 +2524,7 @@
                 
                 if (currentContext.hasMore) {
                     document.getElementById('loadMoreContainer').classList.add('active');
+                    showToast(`Loaded ${data.data.songs.length} of ${currentContext.totalSongs} songs`, 'info');
                 }
             }
         }
@@ -2552,6 +2546,8 @@
             };
             
             const endpoint = `/api/artists/${artistId}/songs?page=0&sortBy=popularity&sortOrder=desc`;
+            console.log('Loading artist:', endpoint);
+            
             const data = await fetchAPI(endpoint);
             
             if (data?.data?.songs) {
@@ -2566,17 +2562,16 @@
                 
                 if (currentContext.hasMore) {
                     document.getElementById('loadMoreContainer').classList.add('active');
+                    showToast(`Loaded ${data.data.songs.length} of ${currentContext.totalSongs} songs`, 'info');
                 }
             }
         }
 
         async function playSongFromData(song, songIndex = -1) {
-            // Get full song details if needed
             if (!song.downloadUrl?.length) {
                 const songData = await fetchAPI(`/api/songs?id=${song.id}`);
                 if (songData?.data?.[0]) {
                     song = songData.data[0];
-                    // Update in context
                     if (songIndex >= 0 && currentContext.songs[songIndex]) {
                         currentContext.songs[songIndex] = song;
                     }
@@ -2588,12 +2583,10 @@
         function playSong(song, songIndex = -1) {
             currentSong = song;
             
-            // Get best quality URL - prioritize 320kbps
             const quality = settings.audioQuality;
             let downloadUrl = null;
             
             if (song.downloadUrl && song.downloadUrl.length > 0) {
-                // Try to get 320kbps (index 4) first
                 if (quality === 'high' && song.downloadUrl[4]?.url) {
                     downloadUrl = song.downloadUrl[4].url;
                 } else if (quality === 'medium' && song.downloadUrl[3]?.url) {
@@ -2601,7 +2594,6 @@
                 } else if (quality === 'low' && song.downloadUrl[2]?.url) {
                     downloadUrl = song.downloadUrl[2].url;
                 } else {
-                    // Fallback: get highest available quality
                     for (let i = song.downloadUrl.length - 1; i >= 0; i--) {
                         if (song.downloadUrl[i]?.url) {
                             downloadUrl = song.downloadUrl[i].url;
@@ -2631,7 +2623,6 @@
                 return;
             }
 
-            // Update queue based on context
             if (currentContext.type && currentContext.songs.length > 0) {
                 queue = [...currentContext.songs];
                 currentIndex = songIndex >= 0 ? songIndex : queue.findIndex(s => s.id === song.id);
