@@ -53,7 +53,6 @@
             }
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -72,7 +71,6 @@
             background: var(--bg-hover);
         }
 
-        /* Header */
         .header {
             background: var(--bg-secondary);
             padding: 0.75rem;
@@ -274,7 +272,6 @@
             }
         }
 
-        /* Navigation */
         .nav-tabs {
             background: var(--bg-secondary);
             padding: 0.5rem;
@@ -349,7 +346,6 @@
             }
         }
 
-        /* Container */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -362,7 +358,6 @@
             }
         }
 
-        /* Content */
         .content-section {
             display: none;
             animation: fadeIn 0.3s ease;
@@ -444,7 +439,6 @@
             gap: 1rem;
         }
 
-        /* Filter Chips */
         .filter-chips {
             display: flex;
             gap: 0.5rem;
@@ -482,7 +476,6 @@
             }
         }
 
-        /* Grid */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -511,7 +504,6 @@
             }
         }
 
-        /* Card */
         .card {
             background: var(--bg-secondary);
             border-radius: 8px;
@@ -660,6 +652,7 @@
             display: flex;
             align-items: center;
             gap: 0.3rem;
+            z-index: 5;
         }
 
         .card-title {
@@ -765,7 +758,6 @@
             border-radius: 50%;
         }
 
-        /* Music Player */
         .music-player {
             position: fixed;
             bottom: 0;
@@ -1232,8 +1224,13 @@
             transform: scale(0.97);
         }
 
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         @media (hover: hover) {
-            .btn:hover {
+            .btn:hover:not(:disabled) {
                 box-shadow: 0 6px 16px rgba(220, 20, 60, 0.4);
             }
         }
@@ -1447,18 +1444,55 @@
             letter-spacing: 0.5px;
         }
 
-        .loading-more {
+        /* Load More Button */
+        .load-more-container {
             text-align: center;
             padding: 2rem 1rem;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
+            display: none;
         }
 
-        .loading-more .spinner {
-            width: 32px;
-            height: 32px;
+        .load-more-container.active {
+            display: block;
+        }
+
+        .load-more-btn {
+            padding: 0.85rem 2rem;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            transition: all 0.3s;
+        }
+
+        .load-more-btn:active {
+            transform: scale(0.97);
+        }
+
+        .load-more-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (hover: hover) {
+            .load-more-btn:hover:not(:disabled) {
+                border-color: var(--accent-primary);
+                background: rgba(220, 20, 60, 0.1);
+                color: var(--accent-primary);
+            }
+        }
+
+        .load-more-btn .spinner {
+            width: 20px;
+            height: 20px;
             border-width: 3px;
-            margin-bottom: 0.5rem;
+            margin: 0;
         }
     </style>
 </head>
@@ -1581,7 +1615,6 @@
                 <div class="chip" onclick="filterPlaylists('party')">Party</div>
             </div>
             <div class="grid" id="trendingPlaylistsGrid"></div>
-            <div id="trendingPlaylistsLoading"></div>
         </div>
 
         <div class="content-section" id="trending-albums">
@@ -1598,7 +1631,6 @@
                 <div class="chip" onclick="filterAlbums('bollywood')">Bollywood</div>
             </div>
             <div class="grid" id="trendingAlbumsGrid"></div>
-            <div id="trendingAlbumsLoading"></div>
         </div>
 
         <div class="content-section" id="search-results">
@@ -1610,7 +1642,12 @@
             </div>
             <div class="section-info" id="searchResultsInfo"></div>
             <div class="grid" id="searchResultsGrid"></div>
-            <div id="searchResultsLoading"></div>
+            <div class="load-more-container" id="loadMoreContainer">
+                <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">
+                    <i class="fas fa-chevron-down"></i>
+                    <span id="loadMoreText">Load More</span>
+                </button>
+            </div>
         </div>
 
         <div class="content-section" id="queue">
@@ -1882,7 +1919,7 @@
         const audio = document.getElementById('audioPlayer');
         let currentPlaylistForAdd = null;
         
-        // FIXED: Context tracking for prev/next with proper type tracking
+        // Context for current view
         let currentContext = {
             type: null, // 'playlist', 'album', 'artist', 'search', 'myplaylist'
             id: null,
@@ -1891,19 +1928,6 @@
             songs: [],
             currentPage: 0,
             totalSongs: 0,
-            hasMore: false,
-            isLoading: false,
-            sortBy: 'popularity',
-            sortOrder: 'desc'
-        };
-        
-        // FIXED: Search state separated from context
-        let searchState = {
-            query: '',
-            type: 'all',
-            page: 0,
-            limit: 20,
-            total: 0,
             hasMore: false,
             isLoading: false
         };
@@ -1917,7 +1941,6 @@
             loadHome();
             setupAudioListeners();
             updateMyPlaylistsDisplay();
-            setupInfiniteScroll();
             setupSearchListener();
             updateStats();
             updateBadges();
@@ -1938,45 +1961,6 @@
                 audio.play();
             } else {
                 nextSong();
-            }
-        }
-
-        // FIXED: Infinite scroll handler - checks context type
-        function setupInfiniteScroll() {
-            let ticking = false;
-            
-            window.addEventListener('scroll', function() {
-                if (!ticking) {
-                    window.requestAnimationFrame(function() {
-                        handleScroll();
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            });
-        }
-
-        // FIXED: Handle scroll based on current context
-        function handleScroll() {
-            const scrollPosition = window.innerHeight + window.scrollY;
-            const threshold = document.documentElement.scrollHeight - 800;
-            
-            if (scrollPosition >= threshold) {
-                const activeSection = document.querySelector('.content-section.active');
-                if (!activeSection) return;
-                
-                const sectionId = activeSection.id;
-                
-                // FIXED: Check context type instead of just searchState
-                if (sectionId === 'search-results') {
-                    if (currentContext.type === 'artist' && currentContext.hasMore && !currentContext.isLoading) {
-                        loadMoreArtistSongs();
-                    } else if (currentContext.type === 'playlist' && currentContext.hasMore && !currentContext.isLoading) {
-                        loadMorePlaylistSongs();
-                    } else if (searchState.hasMore && !searchState.isLoading) {
-                        loadMoreSearchResults();
-                    }
-                }
             }
         }
 
@@ -2026,14 +2010,14 @@
             if (playlistData?.data?.results) {
                 displayPlaylists(playlistData.data.results, 'homePlaylists');
             } else {
-                document.getElementById('homePlaylists').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load playlists</p></div>';
+                document.getElementById('homePlaylists').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
             }
             
             const albumData = await fetchAPI('/api/search/albums?query=2024&page=0&limit=6');
             if (albumData?.data?.results) {
                 displayAlbums(albumData.data.results, 'homeAlbums');
             } else {
-                document.getElementById('homeAlbums').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load albums</p></div>';
+                document.getElementById('homeAlbums').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
             }
         }
 
@@ -2075,7 +2059,6 @@
             }
         }
 
-        // FIXED: Reset context when doing new search
         async function search() {
             const query = document.getElementById('searchInput').value.trim();
             const type = document.getElementById('searchType').value;
@@ -2085,29 +2068,25 @@
                 return;
             }
 
-            // FIXED: Reset both context and searchState
+            // Reset context
             currentContext = {
-                type: null,
+                type: 'search',
                 id: null,
                 url: null,
-                name: null,
+                name: query,
                 songs: [],
                 currentPage: 0,
                 totalSongs: 0,
                 hasMore: false,
-                isLoading: false
+                isLoading: false,
+                searchType: type,
+                query: query
             };
 
-            searchState = {
-                query: query,
-                type: type,
-                page: 0,
-                limit: 20,
-                total: 0,
-                hasMore: false,
-                isLoading: false
-            };
-
+            switchTab('search-results');
+            showLoading('searchResultsGrid');
+            document.getElementById('loadMoreContainer').classList.remove('active');
+            
             let endpoint = '';
             switch(type) {
                 case 'songs': 
@@ -2125,18 +2104,15 @@
                 default: 
                     endpoint = `/api/search?query=${encodeURIComponent(query)}&page=0&limit=20`;
             }
-
-            switchTab('search-results');
-            showLoading('searchResultsGrid');
             
             const data = await fetchAPI(endpoint);
             
-            if (data?.data?.results) {
+            if (data?.data?.results && data.data.results.length > 0) {
                 document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-search"></i> "${query}"`;
                 
                 const total = data.data.total || data.data.results.length;
-                searchState.total = total;
-                searchState.hasMore = data.data.results.length >= searchState.limit;
+                currentContext.totalSongs = total;
+                currentContext.hasMore = data.data.results.length >= 20;
                 
                 if (type === 'albums') {
                     displayAlbums(data.data.results, 'searchResultsGrid');
@@ -2146,76 +2122,117 @@
                     displayArtists(data.data.results, 'searchResultsGrid');
                 } else if (type === 'songs') {
                     displaySongs(data.data.results, 'searchResultsGrid');
+                    currentContext.songs = data.data.results;
                 } else {
                     displayMixedResults(data.data.results, 'searchResultsGrid');
                 }
                 
-                if (data.data.results.length > 0) {
-                    document.getElementById('searchResultsInfo').innerHTML = `
-                        <span><i class="fas fa-check-circle"></i> Showing ${data.data.results.length} of ${total} results</span>
-                    `;
+                document.getElementById('searchResultsInfo').innerHTML = `
+                    <span><i class="fas fa-check-circle"></i> Showing ${data.data.results.length} of ${total > 0 ? total : data.data.results.length} results</span>
+                `;
+                
+                // Show load more only for search results
+                if (currentContext.hasMore && type !== 'albums' && type !== 'playlists' && type !== 'artists') {
+                    document.getElementById('loadMoreContainer').classList.add('active');
                 }
             } else {
                 document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>No results found</p></div>';
-                searchState.hasMore = false;
+                document.getElementById('searchResultsInfo').innerHTML = '';
             }
         }
 
-        async function loadMoreSearchResults() {
-            if (searchState.isLoading || !searchState.hasMore) return;
+        // Load more for search results only
+        async function loadMore() {
+            if (currentContext.isLoading || !currentContext.hasMore) return;
             
-            searchState.isLoading = true;
-            searchState.page++;
+            const btn = document.getElementById('loadMoreBtn');
+            const btnText = document.getElementById('loadMoreText');
             
-            showLoadingMore('searchResultsLoading');
+            currentContext.isLoading = true;
+            btn.disabled = true;
+            btnText.innerHTML = '<div class="spinner"></div> Loading...';
             
-            let endpoint = '';
-            const { query, type, page, limit } = searchState;
-            
-            switch(type) {
-                case 'songs': 
-                    endpoint = `/api/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`; 
-                    break;
-                case 'albums': 
-                    endpoint = `/api/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`; 
-                    break;
-                case 'artists': 
-                    endpoint = `/api/search/artists?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`; 
-                    break;
-                case 'playlists': 
-                    endpoint = `/api/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`; 
-                    break;
-                default: 
-                    endpoint = `/api/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
-            }
-            
-            const data = await fetchAPI(endpoint);
-            
-            if (data?.data?.results && data.data.results.length > 0) {
-                if (type === 'albums') {
-                    displayAlbums(data.data.results, 'searchResultsGrid', true);
-                } else if (type === 'playlists') {
-                    displayPlaylists(data.data.results, 'searchResultsGrid', true);
-                } else if (type === 'artists') {
-                    displayArtists(data.data.results, 'searchResultsGrid', true);
-                } else if (type === 'songs') {
-                    displaySongs(data.data.results, 'searchResultsGrid', true);
-                } else {
-                    displayMixedResults(data.data.results, 'searchResultsGrid', true);
+            if (currentContext.type === 'search') {
+                // Search results pagination
+                currentContext.currentPage++;
+                
+                let endpoint = '';
+                const { query, searchType, currentPage } = currentContext;
+                
+                switch(searchType) {
+                    case 'songs': 
+                        endpoint = `/api/search/songs?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
+                        break;
+                    default: 
+                        endpoint = `/api/search?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`;
                 }
                 
-                const currentCount = document.querySelectorAll('#searchResultsGrid .card').length;
-                document.getElementById('searchResultsInfo').innerHTML = `
-                    <span><i class="fas fa-check-circle"></i> Showing ${currentCount} of ${searchState.total} results</span>
-                `;
+                const data = await fetchAPI(endpoint);
                 
-                searchState.hasMore = data.data.results.length >= limit;
-            } else {
-                searchState.hasMore = false;
+                if (data?.data?.results && data.data.results.length > 0) {
+                    if (searchType === 'songs') {
+                        displaySongs(data.data.results, 'searchResultsGrid', true);
+                        currentContext.songs = [...currentContext.songs, ...data.data.results];
+                    } else {
+                        displayMixedResults(data.data.results, 'searchResultsGrid', true);
+                    }
+                    
+                    const currentCount = document.querySelectorAll('#searchResultsGrid .card').length;
+                    document.getElementById('searchResultsInfo').innerHTML = `
+                        <span><i class="fas fa-check-circle"></i> Showing ${currentCount} of ${currentContext.totalSongs} results</span>
+                    `;
+                    
+                    currentContext.hasMore = data.data.results.length >= 20;
+                } else {
+                    currentContext.hasMore = false;
+                }
+            } else if (currentContext.type === 'playlist') {
+                // Playlist pagination
+                currentContext.currentPage++;
+                
+                const endpoint = `/api/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
+                const data = await fetchAPI(endpoint);
+                
+                if (data?.data?.songs && data.data.songs.length > 0) {
+                    currentContext.songs = [...currentContext.songs, ...data.data.songs];
+                    displaySongs(data.data.songs, 'searchResultsGrid', true);
+                    
+                    document.getElementById('searchResultsInfo').innerHTML = `
+                        <span><i class="fas fa-music"></i> Showing ${currentContext.songs.length} of ${currentContext.totalSongs} songs</span>
+                    `;
+                    
+                    currentContext.hasMore = currentContext.songs.length < currentContext.totalSongs;
+                } else {
+                    currentContext.hasMore = false;
+                }
+            } else if (currentContext.type === 'artist') {
+                // Artist songs pagination
+                currentContext.currentPage++;
+                
+                const endpoint = `/api/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
+                const data = await fetchAPI(endpoint);
+                
+                if (data?.data?.songs && data.data.songs.length > 0) {
+                    currentContext.songs = [...currentContext.songs, ...data.data.songs];
+                    displaySongs(data.data.songs, 'searchResultsGrid', true);
+                    
+                    document.getElementById('searchResultsInfo').innerHTML = `
+                        <span><i class="fas fa-music"></i> Showing ${currentContext.songs.length} of ${currentContext.totalSongs} songs</span>
+                    `;
+                    
+                    currentContext.hasMore = currentContext.songs.length < currentContext.totalSongs;
+                } else {
+                    currentContext.hasMore = false;
+                }
             }
             
-            hideLoadingMore('searchResultsLoading');
-            searchState.isLoading = false;
+            if (!currentContext.hasMore) {
+                document.getElementById('loadMoreContainer').classList.remove('active');
+            }
+            
+            btn.disabled = false;
+            btnText.innerHTML = 'Load More';
+            currentContext.isLoading = false;
         }
 
         function displaySongs(songs, gridId, append = false) {
@@ -2226,33 +2243,34 @@
                 return;
             }
             
-            const songsHTML = songs.map(song => {
+            const songsHTML = songs.map((song, index) => {
                 const imageUrl = song.image?.[2]?.url || song.image?.[1]?.url || 'https://via.placeholder.com/200';
                 const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
                 const isFav = favorites.find(f => f.id === song.id);
+                const songIndex = append ? (currentContext.songs.length - songs.length + index) : index;
                 
                 return `
-                    <div class="card" data-song='${JSON.stringify(song).replace(/'/g, "&#39;")}'>
+                    <div class="card">
                         <div class="card-img-container">
                             <img src="${imageUrl}" class="card-img" loading="lazy" onerror="this.src='https://via.placeholder.com/200'">
                             ${song.duration ? `<div class="card-badge"><i class="fas fa-clock"></i> ${formatTime(song.duration)}</div>` : ''}
-                            <div class="play-overlay" onclick="handlePlayClick(this)">
+                            <div class="play-overlay" onclick="event.stopPropagation(); playSongByIndex(${songIndex})">
                                 <i class="fas fa-play"></i>
                             </div>
                         </div>
                         <div class="card-title">${song.name || 'Unknown Song'}</div>
                         <div class="card-subtitle">${artistName}</div>
                         <div class="card-actions">
-                            <button class="icon-btn" onclick="handleAddQueue(this)" title="Add to queue">
+                            <button class="icon-btn" onclick="event.stopPropagation(); addSongToQueue(${songIndex})" title="Add to queue">
                                 <i class="fas fa-plus"></i>
                             </button>
-                            <button class="icon-btn ${isFav ? 'active' : ''}" onclick="handleToggleFav(this)" title="Favorite">
+                            <button class="icon-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteSongByIndex(${songIndex})" title="Favorite">
                                 <i class="fas fa-heart"></i>
                             </button>
-                            <button class="icon-btn" onclick="handleDownload(this)" title="Download">
+                            <button class="icon-btn" onclick="event.stopPropagation(); downloadSongByIndex(${songIndex})" title="Download">
                                 <i class="fas fa-download"></i>
                             </button>
-                            <button class="icon-btn" onclick="handleAddPlaylist(this)" title="Add to playlist">
+                            <button class="icon-btn" onclick="event.stopPropagation(); addSongToPlaylistByIndex(${songIndex})" title="Add to playlist">
                                 <i class="fas fa-list"></i>
                             </button>
                         </div>
@@ -2276,7 +2294,7 @@
                 const artistName = album.artists?.primary?.map(a => a.name).join(', ') || 'Various Artists';
                 
                 return `
-                    <div class="card" onclick='loadAlbum("${album.id}", "${escapeHtml(album.name)}")'>
+                    <div class="card" onclick="loadAlbum('${album.id}', '${escapeHtml(album.name)}')">
                         <div class="card-img-container">
                             <img src="${imageUrl}" class="card-img" loading="lazy">
                             ${album.songCount ? `<div class="card-badge"><i class="fas fa-music"></i> ${album.songCount}</div>` : ''}
@@ -2305,7 +2323,7 @@
                 const imageUrl = playlist.image?.[2]?.url || playlist.image?.[1]?.url || 'https://via.placeholder.com/200';
                 
                 return `
-                    <div class="card" onclick='loadOnlinePlaylist("${playlist.id}", "${encodeURIComponent(playlist.url || '')}", "${escapeHtml(playlist.name)}")'>
+                    <div class="card" onclick="loadOnlinePlaylist('${playlist.id}', '${encodeURIComponent(playlist.url || '')}', '${escapeHtml(playlist.name)}')">
                         <div class="card-img-container">
                             <img src="${imageUrl}" class="card-img" loading="lazy">
                             ${playlist.songCount ? `<div class="card-badge"><i class="fas fa-music"></i> ${playlist.songCount}</div>` : ''}
@@ -2334,7 +2352,7 @@
                 const imageUrl = artist.image?.[2]?.url || artist.image?.[1]?.url || 'https://via.placeholder.com/200';
                 
                 return `
-                    <div class="card artist-card" onclick='loadArtistSongs("${artist.id}", "${escapeHtml(artist.name)}")'>
+                    <div class="card artist-card" onclick="loadArtistSongs('${artist.id}', '${escapeHtml(artist.name)}')">
                         <div class="card-img-container">
                             <img src="${imageUrl}" class="card-img" loading="lazy">
                             <div class="play-overlay">
@@ -2362,11 +2380,14 @@
                 const imageUrl = item.image?.[2]?.url || item.image?.[1]?.url || 'https://via.placeholder.com/200';
                 
                 if (item.type === 'song') {
+                    const songIndex = currentContext.songs.length;
+                    currentContext.songs.push(item);
+                    
                     return `
-                        <div class="card" data-song='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
+                        <div class="card">
                             <div class="card-img-container">
                                 <img src="${imageUrl}" class="card-img" loading="lazy">
-                                <div class="play-overlay" onclick="handlePlayClick(this)">
+                                <div class="play-overlay" onclick="event.stopPropagation(); playSongByIndex(${songIndex})">
                                     <i class="fas fa-play"></i>
                                 </div>
                             </div>
@@ -2376,7 +2397,7 @@
                     `;
                 } else if (item.type === 'album') {
                     return `
-                        <div class="card" onclick='loadAlbum("${item.id}", "${escapeHtml(item.name)}")'>
+                        <div class="card" onclick="loadAlbum('${item.id}', '${escapeHtml(item.name)}')">
                             <div class="card-img-container">
                                 <img src="${imageUrl}" class="card-img" loading="lazy">
                                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -2387,7 +2408,7 @@
                     `;
                 } else if (item.type === 'playlist') {
                     return `
-                        <div class="card" onclick='loadOnlinePlaylist("${item.id}", "${encodeURIComponent(item.url || '')}", "${escapeHtml(item.name)}")'>
+                        <div class="card" onclick="loadOnlinePlaylist('${item.id}', '${encodeURIComponent(item.url || '')}', '${escapeHtml(item.name)}')">
                             <div class="card-img-container">
                                 <img src="${imageUrl}" class="card-img" loading="lazy">
                                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -2398,7 +2419,7 @@
                     `;
                 } else if (item.type === 'artist') {
                     return `
-                        <div class="card artist-card" onclick='loadArtistSongs("${item.id}", "${escapeHtml(item.name)}")'>
+                        <div class="card artist-card" onclick="loadArtistSongs('${item.id}', '${escapeHtml(item.name)}')">
                             <div class="card-img-container">
                                 <img src="${imageUrl}" class="card-img" loading="lazy">
                                 <div class="play-overlay"><i class="fas fa-play"></i></div>
@@ -2414,49 +2435,50 @@
             grid.innerHTML = append ? grid.innerHTML + resultsHTML : resultsHTML;
         }
 
-        function handlePlayClick(element) {
-            event.stopPropagation();
-            const card = element.closest('.card');
-            const song = JSON.parse(card.dataset.song);
-            playSongFromData(song);
+        // Index-based functions to avoid event propagation issues
+        function playSongByIndex(index) {
+            if (currentContext.songs[index]) {
+                playSongFromData(currentContext.songs[index], index);
+            }
         }
 
-        function handleAddQueue(element) {
-            event.stopPropagation();
-            const card = element.closest('.card');
-            const song = JSON.parse(card.dataset.song);
-            addToQueue(song);
+        function addSongToQueue(index) {
+            if (currentContext.songs[index]) {
+                addToQueue(currentContext.songs[index]);
+            }
         }
 
-        function handleDownload(element) {
-            event.stopPropagation();
-            const card = element.closest('.card');
-            const song = JSON.parse(card.dataset.song);
-            downloadSong(song);
+        function toggleFavoriteSongByIndex(index) {
+            if (currentContext.songs[index]) {
+                toggleFavoriteSong(currentContext.songs[index]);
+                // Refresh display to update heart icon
+                const gridId = document.querySelector('.content-section.active .grid')?.id;
+                if (gridId && currentContext.type !== 'search') {
+                    displaySongs(currentContext.songs, gridId);
+                }
+            }
         }
 
-        function handleAddPlaylist(element) {
-            event.stopPropagation();
-            const card = element.closest('.card');
-            const song = JSON.parse(card.dataset.song);
-            addSongToPlaylist(song);
+        function downloadSongByIndex(index) {
+            if (currentContext.songs[index]) {
+                downloadSong(currentContext.songs[index]);
+            }
         }
 
-        function handleToggleFav(element) {
-            event.stopPropagation();
-            const card = element.closest('.card');
-            const song = JSON.parse(card.dataset.song);
-            toggleFavoriteSong(song);
-            element.classList.toggle('active');
+        function addSongToPlaylistByIndex(index) {
+            if (currentContext.songs[index]) {
+                currentPlaylistForAdd = currentContext.songs[index];
+                currentSong = currentContext.songs[index];
+                openAddToPlaylist();
+            }
         }
 
         async function loadAlbum(albumId, albumName) {
             showLoading('searchResultsGrid');
             switchTab('search-results');
             document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-compact-disc"></i> ${albumName}`;
-            document.getElementById('searchResultsInfo').textContent = 'Loading...';
+            document.getElementById('loadMoreContainer').classList.remove('active');
             
-            // FIXED: Set context to album type
             currentContext = {
                 type: 'album',
                 id: albumId,
@@ -2464,17 +2486,6 @@
                 songs: [],
                 currentPage: 0,
                 totalSongs: 0,
-                hasMore: false,
-                isLoading: false
-            };
-            
-            // Reset searchState
-            searchState = {
-                query: '',
-                type: 'all',
-                page: 0,
-                limit: 20,
-                total: 0,
                 hasMore: false,
                 isLoading: false
             };
@@ -2493,7 +2504,6 @@
             switchTab('search-results');
             document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-list-music"></i> ${playlistName}`;
             
-            // FIXED: Set context to playlist type
             currentContext = {
                 type: 'playlist',
                 id: playlistId,
@@ -2506,23 +2516,12 @@
                 isLoading: false
             };
             
-            // Reset searchState
-            searchState = {
-                query: '',
-                type: 'all',
-                page: 0,
-                limit: 20,
-                total: 0,
-                hasMore: false,
-                isLoading: false
-            };
-            
-            const endpoint = `/api/playlists?id=${playlistId}&link=${encodeURIComponent(currentContext.url)}&page=0&limit=20`;
+            const endpoint = `/api/playlists?id=${playlistId}&page=0&limit=20`;
             const data = await fetchAPI(endpoint);
             
             if (data?.data?.songs) {
                 currentContext.songs = data.data.songs;
-                currentContext.totalSongs = data.data.total || data.data.songCount || 0;
+                currentContext.totalSongs = data.data.total || data.data.songCount || data.data.songs.length;
                 currentContext.hasMore = data.data.songs.length >= 20 && currentContext.songs.length < currentContext.totalSongs;
                 
                 displaySongs(data.data.songs, 'searchResultsGrid');
@@ -2531,56 +2530,16 @@
                 `;
                 
                 if (currentContext.hasMore) {
-                    loadMorePlaylistSongs();
+                    document.getElementById('loadMoreContainer').classList.add('active');
                 }
             }
         }
 
-        // FIXED: Load more playlist songs
-        async function loadMorePlaylistSongs() {
-            if (currentContext.isLoading || !currentContext.hasMore || currentContext.type !== 'playlist') return;
-            
-            currentContext.isLoading = true;
-            currentContext.currentPage++;
-            
-            showLoadingMore('searchResultsLoading');
-            
-            const endpoint = `/api/playlists?id=${currentContext.id}&link=${encodeURIComponent(currentContext.url)}&page=${currentContext.currentPage}&limit=20`;
-            const data = await fetchAPI(endpoint);
-            
-            if (data?.data?.songs && data.data.songs.length > 0) {
-                currentContext.songs = [...currentContext.songs, ...data.data.songs];
-                displaySongs(data.data.songs, 'searchResultsGrid', true);
-                
-                document.getElementById('searchResultsInfo').innerHTML = `
-                    <span><i class="fas fa-music"></i> Showing ${currentContext.songs.length} of ${currentContext.totalSongs} songs</span>
-                `;
-                
-                currentContext.hasMore = currentContext.songs.length < currentContext.totalSongs;
-                
-                if (currentContext.hasMore) {
-                    setTimeout(() => {
-                        currentContext.isLoading = false;
-                        loadMorePlaylistSongs();
-                    }, 500);
-                } else {
-                    hideLoadingMore('searchResultsLoading');
-                    currentContext.isLoading = false;
-                }
-            } else {
-                currentContext.hasMore = false;
-                hideLoadingMore('searchResultsLoading');
-                currentContext.isLoading = false;
-            }
-        }
-
-        // FIXED: Load artist songs
         async function loadArtistSongs(artistId, artistName) {
             showLoading('searchResultsGrid');
             switchTab('search-results');
             document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-user"></i> ${artistName}`;
             
-            // FIXED: Set context to artist type
             currentContext = {
                 type: 'artist',
                 id: artistId,
@@ -2588,19 +2547,6 @@
                 songs: [],
                 currentPage: 0,
                 totalSongs: 0,
-                hasMore: false,
-                isLoading: false,
-                sortBy: 'popularity',
-                sortOrder: 'desc'
-            };
-            
-            // Reset searchState
-            searchState = {
-                query: '',
-                type: 'all',
-                page: 0,
-                limit: 20,
-                total: 0,
                 hasMore: false,
                 isLoading: false
             };
@@ -2610,8 +2556,8 @@
             
             if (data?.data?.songs) {
                 currentContext.songs = data.data.songs;
-                currentContext.totalSongs = data.data.total || 0;
-                currentContext.hasMore = data.data.songs.length >= 20 && currentContext.songs.length < currentContext.totalSongs;
+                currentContext.totalSongs = data.data.total || data.data.songs.length;
+                currentContext.hasMore = data.data.songs.length > 0 && currentContext.songs.length < currentContext.totalSongs;
                 
                 displaySongs(data.data.songs, 'searchResultsGrid');
                 document.getElementById('searchResultsInfo').innerHTML = `
@@ -2619,121 +2565,76 @@
                 `;
                 
                 if (currentContext.hasMore) {
-                    loadMoreArtistSongs();
+                    document.getElementById('loadMoreContainer').classList.add('active');
                 }
             }
         }
 
-        // FIXED: Load more artist songs
-        async function loadMoreArtistSongs() {
-            if (currentContext.isLoading || !currentContext.hasMore || currentContext.type !== 'artist') return;
-            
-            currentContext.isLoading = true;
-            currentContext.currentPage++;
-            
-            showLoadingMore('searchResultsLoading');
-            
-            const endpoint = `/api/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=${currentContext.sortBy}&sortOrder=${currentContext.sortOrder}`;
-            const data = await fetchAPI(endpoint);
-            
-            if (data?.data?.songs && data.data.songs.length > 0) {
-                currentContext.songs = [...currentContext.songs, ...data.data.songs];
-                displaySongs(data.data.songs, 'searchResultsGrid', true);
-                
-                document.getElementById('searchResultsInfo').innerHTML = `
-                    <span><i class="fas fa-music"></i> Showing ${currentContext.songs.length} of ${currentContext.totalSongs} songs</span>
-                `;
-                
-                currentContext.hasMore = currentContext.songs.length < currentContext.totalSongs;
-                
-                if (currentContext.hasMore) {
-                    setTimeout(() => {
-                        currentContext.isLoading = false;
-                        loadMoreArtistSongs();
-                    }, 500);
-                } else {
-                    hideLoadingMore('searchResultsLoading');
-                    currentContext.isLoading = false;
-                }
-            } else {
-                currentContext.hasMore = false;
-                hideLoadingMore('searchResultsLoading');
-                currentContext.isLoading = false;
-            }
-        }
-
-        // FIXED: Play song with proper URL handling (320kbps default)
-        async function playSongFromData(song) {
-            console.log('Playing song:', song);
-            
-            // FIXED: If song doesn't have download URLs, fetch them
-            if (!song.downloadUrl || song.downloadUrl.length === 0) {
-                console.log('Fetching song details for:', song.id);
+        async function playSongFromData(song, songIndex = -1) {
+            // Get full song details if needed
+            if (!song.downloadUrl?.length) {
                 const songData = await fetchAPI(`/api/songs?id=${song.id}`);
-                console.log('Song data:', songData);
                 if (songData?.data?.[0]) {
                     song = songData.data[0];
+                    // Update in context
+                    if (songIndex >= 0 && currentContext.songs[songIndex]) {
+                        currentContext.songs[songIndex] = song;
+                    }
                 }
             }
-            playSong(song);
+            playSong(song, songIndex);
         }
 
-        function playSong(song) {
+        function playSong(song, songIndex = -1) {
             currentSong = song;
             
-            console.log('PlaySong called with:', song);
-            console.log('Download URLs:', song.downloadUrl);
-            
-            // FIXED: Get quality index (320kbps = index 4)
+            // Get best quality URL - prioritize 320kbps
             const quality = settings.audioQuality;
-            let qualityIndex = 4; // 320kbps (high)
-            if (quality === 'medium') qualityIndex = 3; // 160kbps
-            if (quality === 'low') qualityIndex = 2; // 96kbps
-            
-            // FIXED: Try to get best quality URL with proper fallback
             let downloadUrl = null;
+            
             if (song.downloadUrl && song.downloadUrl.length > 0) {
-                // Try preferred quality first
-                downloadUrl = song.downloadUrl[qualityIndex]?.url;
-                
-                // Fallback to highest available quality
-                if (!downloadUrl) {
-                    for (let i = 4; i >= 0; i--) {
+                // Try to get 320kbps (index 4) first
+                if (quality === 'high' && song.downloadUrl[4]?.url) {
+                    downloadUrl = song.downloadUrl[4].url;
+                } else if (quality === 'medium' && song.downloadUrl[3]?.url) {
+                    downloadUrl = song.downloadUrl[3].url;
+                } else if (quality === 'low' && song.downloadUrl[2]?.url) {
+                    downloadUrl = song.downloadUrl[2].url;
+                } else {
+                    // Fallback: get highest available quality
+                    for (let i = song.downloadUrl.length - 1; i >= 0; i--) {
                         if (song.downloadUrl[i]?.url) {
                             downloadUrl = song.downloadUrl[i].url;
-                            console.log(`Using quality index ${i} (${song.downloadUrl[i].quality})`);
                             break;
                         }
                     }
                 }
             }
             
-            console.log('Selected download URL:', downloadUrl);
-            
             if (downloadUrl) {
                 audio.src = downloadUrl;
                 audio.playbackRate = settings.playbackSpeed;
-                audio.play().then(() => {
-                    console.log('Playback started successfully');
-                    isPlaying = true;
-                    updatePlayerUI();
-                    updatePlayPauseButtons();
-                    addToRecentlyPlayed(song);
-                    document.getElementById('fullscreenArtwork').classList.add('playing');
-                }).catch(err => {
-                    console.error('Playback error:', err);
+                audio.play().catch(err => {
+                    console.error('Play error:', err);
                     showToast('Playback failed', 'error');
                 });
+                isPlaying = true;
+                updatePlayerUI();
+                updatePlayPauseButtons();
+                addToRecentlyPlayed(song);
+                
+                const fullscreenArtwork = document.getElementById('fullscreenArtwork');
+                fullscreenArtwork.classList.add('playing');
             } else {
-                console.error('No download URL found');
-                showToast('Song URL not available', 'error');
+                console.error('No download URL found for song:', song);
+                showToast('Song URL unavailable', 'error');
                 return;
             }
 
             // Update queue based on context
             if (currentContext.type && currentContext.songs.length > 0) {
                 queue = [...currentContext.songs];
-                currentIndex = queue.findIndex(s => s.id === song.id);
+                currentIndex = songIndex >= 0 ? songIndex : queue.findIndex(s => s.id === song.id);
             } else {
                 if (!queue.find(s => s.id === song.id)) {
                     queue.push(song);
@@ -2775,7 +2676,7 @@
         function previousSong() {
             if (currentIndex > 0) {
                 currentIndex--;
-                playSongFromData(queue[currentIndex]);
+                playSongFromData(queue[currentIndex], currentIndex);
             } else {
                 showToast('First song in queue', 'info');
             }
@@ -2791,14 +2692,14 @@
             
             if (repeatMode === 'all' && currentIndex === queue.length - 1) {
                 currentIndex = 0;
-                playSongFromData(queue[currentIndex]);
+                playSongFromData(queue[currentIndex], currentIndex);
             } else if (currentIndex < queue.length - 1) {
                 if (isShuffleOn) {
                     currentIndex = Math.floor(Math.random() * queue.length);
                 } else {
                     currentIndex++;
                 }
-                playSongFromData(queue[currentIndex]);
+                playSongFromData(queue[currentIndex], currentIndex);
             } else {
                 showToast('Last song in queue', 'info');
                 audio.pause();
@@ -2822,17 +2723,6 @@
             if (confirm('Clear entire queue?')) {
                 queue = [];
                 currentIndex = -1;
-                currentContext = {
-                    type: null,
-                    id: null,
-                    url: null,
-                    name: null,
-                    songs: [],
-                    currentPage: 0,
-                    totalSongs: 0,
-                    hasMore: false,
-                    isLoading: false
-                };
                 updateQueueDisplay();
                 updateBadges();
                 showToast('Queue cleared', 'success');
@@ -2844,7 +2734,7 @@
             document.getElementById('queueCount').textContent = queue.length;
             
             if (!queue.length) {
-                queueList.innerHTML = '<div class="empty-state"><i class="fas fa-list"></i><p>Queue is empty</p><p style="font-size: 0.8rem; margin-top: 0.5rem;">Add songs to get started</p></div>';
+                queueList.innerHTML = '<div class="empty-state"><i class="fas fa-list"></i><p>Queue is empty</p></div>';
                 return;
             }
             
@@ -2853,7 +2743,7 @@
                 const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
                 
                 return `
-                    <div class="queue-item ${index === currentIndex ? 'active' : ''}" data-index="${index}" onclick="playFromQueue(${index})">
+                    <div class="queue-item ${index === currentIndex ? 'active' : ''}" onclick="playFromQueue(${index})">
                         <img src="${imageUrl}" class="queue-img" loading="lazy">
                         <div class="queue-info">
                             <div class="title">${song.name || 'Unknown Song'}</div>
@@ -2869,7 +2759,7 @@
 
         function playFromQueue(index) {
             currentIndex = index;
-            playSongFromData(queue[index]);
+            playSongFromData(queue[index], index);
         }
 
         function removeFromQueue(index, event) {
@@ -3004,7 +2894,6 @@
         function toggleFavorite(event) {
             event.stopPropagation();
             if (!currentSong) return;
-            
             toggleFavoriteSong(currentSong);
         }
 
@@ -3159,8 +3048,8 @@
         }
 
         function openAddToPlaylist() {
-            if (!currentSong) {
-                showToast('No song playing', 'warning');
+            if (!currentSong && !currentPlaylistForAdd) {
+                showToast('No song selected', 'warning');
                 return;
             }
             
@@ -3182,12 +3071,6 @@
             `).join('');
             
             openModal('addToPlaylistModal');
-        }
-
-        function addSongToPlaylist(song) {
-            currentPlaylistForAdd = song;
-            currentSong = song;
-            openAddToPlaylist();
         }
 
         function addToPlaylistAction(playlistId) {
@@ -3212,7 +3095,7 @@
             const grid = document.getElementById('myPlaylistsGrid');
             
             if (!playlists.length) {
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-heart"></i><p>No playlists yet</p><p style="font-size: 0.8rem; margin-top: 0.5rem;">Create your first playlist</p></div>';
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-heart"></i><p>No playlists yet</p></div>';
                 return;
             }
             
@@ -3223,20 +3106,20 @@
                 <div class="card">
                     <div class="card-img-container" style="${firstSongImage ? `background-image: url(${firstSongImage}); background-size: cover;` : 'background: var(--accent-gradient);'} display: flex; align-items: center; justify-content: center;">
                         ${!firstSongImage ? '<i class="fas fa-music" style="font-size: 2.5rem; color: white; opacity: 0.8;"></i>' : ''}
-                        <div class="play-overlay" onclick='playUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")}); event.stopPropagation();'>
+                        <div class="play-overlay" onclick='event.stopPropagation(); playUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")})'>
                             <i class="fas fa-play"></i>
                         </div>
                     </div>
                     <div class="card-title">${playlist.name}</div>
                     <div class="card-subtitle">${playlist.songs.length} songs</div>
                     <div class="card-actions">
-                        <button class="icon-btn" onclick='viewUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")}); event.stopPropagation();' title="View">
+                        <button class="icon-btn" onclick='event.stopPropagation(); viewUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")})' title="View">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="icon-btn" onclick='playUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")}); event.stopPropagation();' title="Play">
+                        <button class="icon-btn" onclick='event.stopPropagation(); playUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")})' title="Play">
                             <i class="fas fa-play"></i>
                         </button>
-                        <button class="icon-btn" onclick="deletePlaylist('${playlist.id}'); event.stopPropagation();" title="Delete">
+                        <button class="icon-btn" onclick="event.stopPropagation(); deletePlaylist('${playlist.id}')" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -3291,7 +3174,7 @@
                 
                 queue = [...playlist.songs];
                 currentIndex = songIndex;
-                playSongFromData(playlist.songs[songIndex]);
+                playSongFromData(playlist.songs[songIndex], songIndex);
                 closeModal('viewPlaylistModal');
             }
         }
@@ -3315,7 +3198,7 @@
             
             queue = [...playlist.songs];
             currentIndex = 0;
-            playSongFromData(queue[0]);
+            playSongFromData(queue[0], 0);
             closeModal('playlistModal');
             switchTab('queue');
         }
@@ -3367,7 +3250,7 @@
         }
 
         function clearAllData() {
-            if (confirm('This will delete all your playlists, favorites, and history. Continue?')) {
+            if (confirm('This will delete all your data. Continue?')) {
                 localStorage.clear();
                 location.reload();
             }
@@ -3467,20 +3350,6 @@
         function showLoading(gridId) {
             const grid = document.getElementById(gridId);
             if (grid) grid.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
-        }
-
-        function showLoadingMore(containerId) {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = '<div class="loading-more"><div class="spinner"></div><p>Loading more...</p></div>';
-            }
-        }
-
-        function hideLoadingMore(containerId) {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = '';
-            }
         }
 
         function showToast(message, type = 'info') {
