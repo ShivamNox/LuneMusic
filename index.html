@@ -1577,24 +1577,73 @@
                 </div>
             </div>
 
+            <!-- Trending Now -->
             <div class="section-header">
                 <h2 class="section-title">
                     <i class="fas fa-fire"></i>
                     Trending Now
                 </h2>
-                <button class="section-action" onclick="loadHome()">
-                    <i class="fas fa-sync-alt"></i> Refresh
+                <button class="section-action" onclick="loadTrendingPlaylistsTab()">
+                    See All <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
-            <div class="grid" id="homePlaylists"></div>
-            
+            <div class="grid" id="trendingNow"></div>
+
+            <!-- Popular Albums -->
             <div class="section-header" style="margin-top: 2rem;">
                 <h2 class="section-title">
                     <i class="fas fa-compact-disc"></i>
                     Popular Albums
                 </h2>
+                <button class="section-action" onclick="loadTrendingAlbumsTab()">
+                    See All <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
-            <div class="grid" id="homeAlbums"></div>
+            <div class="grid" id="popularAlbums"></div>
+
+            <!-- Editorial Picks -->
+            <div class="section-header" style="margin-top: 2rem;">
+                <h2 class="section-title">
+                    <i class="fas fa-star"></i>
+                    Editorial Picks
+                </h2>
+                <button class="section-action" onclick="loadTrendingAlbumsTab()">
+                    See All <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="grid" id="editorialPicks"></div>
+
+            <!-- Top Charts -->
+            <div class="section-header" style="margin-top: 2rem;">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Top Charts
+                </h2>
+                <button class="section-action" onclick="loadTrendingPlaylistsTab()">
+                    See All <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="grid" id="topCharts"></div>
+
+            <!-- Made For You -->
+            <div class="section-header" style="margin-top: 2rem;">
+                <h2 class="section-title">
+                    <i class="fas fa-heart"></i>
+                    Made For You
+                </h2>
+                <button class="section-action" onclick="loadTrendingPlaylistsTab()">
+                    See All <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="grid" id="madeForYou"></div>
+
+            <!-- Refresh Button -->
+            <div style="text-align: center; margin-top: 2rem; padding-bottom: 2rem;">
+                <button class="btn" onclick="loadHome()" style="min-width: 200px;">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh All
+                </button>
+            </div>
         </div>
 
         <div class="content-section" id="trending-playlists">
@@ -2000,21 +2049,108 @@
         }
 
         async function loadHome() {
-            showLoading('homePlaylists');
-            showLoading('homeAlbums');
-            
-            const playlistData = await fetchAPI('/api/search/playlists?query=trending&page=0&limit=6');
-            if (playlistData?.data?.results) {
-                displayPlaylists(playlistData.data.results, 'homePlaylists');
+            // Show loading for all sections
+            showLoading('trendingNow');
+            showLoading('popularAlbums');
+            showLoading('editorialPicks');
+            showLoading('topCharts');
+            showLoading('madeForYou');
+
+            // Load all sections parallelly
+            await Promise.all([
+                loadTrendingNow(),
+                loadPopularAlbums(),
+                loadEditorialPicks(),
+                loadTopCharts(),
+                loadMadeForYou()
+            ]);
+        }
+
+        async function loadTrendingNow() {
+            const data = await fetchAPI('/api/search/playlists?query=trending viral&page=0&limit=10');
+            if (data?.data?.results) {
+                displayPlaylists(data.data.results.slice(0, 6), 'trendingNow');
             } else {
-                document.getElementById('homePlaylists').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                document.getElementById('trendingNow').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
             }
-            
-            const albumData = await fetchAPI('/api/search/albums?query=2024&page=0&limit=6');
-            if (albumData?.data?.results) {
-                displayAlbums(albumData.data.results, 'homeAlbums');
+        }
+
+        async function loadPopularAlbums() {
+            const data = await fetchAPI('/api/search/albums?query=latest bollywood 2024&page=0&limit=10');
+            if (data?.data?.results) {
+                displayAlbums(data.data.results.slice(0, 6), 'popularAlbums');
             } else {
-                document.getElementById('homeAlbums').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                document.getElementById('popularAlbums').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadEditorialPicks() {
+            const data = await fetchAPI('/api/search/albums?query=fresh music 2024&page=0&limit=10');
+            if (data?.data?.results) {
+                displayAlbums(data.data.results.slice(0, 6), 'editorialPicks');
+            } else {
+                document.getElementById('editorialPicks').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        // FIXED: Top Charts with specific playlists
+        async function loadTopCharts() {
+            try {
+                // Load multiple specific playlists
+                const [data1, data2, data3, data4] = await Promise.all([
+                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs Hindi&page=0&limit=3'),
+                    fetchAPI('/api/search/playlists?query=Trending Today&page=0&limit=3'),
+                    fetchAPI('/api/search/playlists?query=Most Searched Songs Hindi&page=0&limit=3'),
+                    fetchAPI('/api/search/playlists?query=Punjab Se Bollywood&page=0&limit=3')
+                ]);
+
+                // Combine results
+                let combinedResults = [];
+
+                if (data1?.data?.results?.length) combinedResults.push(data1.data.results[0]);
+                if (data2?.data?.results?.length) combinedResults.push(data2.data.results[0]);
+                if (data3?.data?.results?.length) combinedResults.push(data3.data.results[0]);
+                if (data4?.data?.results?.length) combinedResults.push(data4.data.results[0]);
+
+                // If we need more to fill 6 slots, add from remaining results
+                if (combinedResults.length < 6) {
+                    const allResults = [
+                        ...(data1?.data?.results || []).slice(1),
+                        ...(data2?.data?.results || []).slice(1),
+                        ...(data3?.data?.results || []).slice(1),
+                        ...(data4?.data?.results || []).slice(1)
+                    ];
+
+                    // Remove duplicates
+                    const addedIds = new Set(combinedResults.map(r => r.id));
+                    const uniqueResults = allResults.filter(r => !addedIds.has(r.id));
+
+                    combinedResults = [...combinedResults, ...uniqueResults].slice(0, 6);
+                }
+
+                if (combinedResults.length > 0) {
+                    displayPlaylists(combinedResults, 'topCharts');
+                } else {
+                    // Fallback to generic top charts
+                    const fallbackData = await fetchAPI('/api/search/playlists?query=top 100 hindi&page=0&limit=6');
+                    if (fallbackData?.data?.results) {
+                        displayPlaylists(fallbackData.data.results.slice(0, 6), 'topCharts');
+                    } else {
+                        document.getElementById('topCharts').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading top charts:', error);
+                document.getElementById('topCharts').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadMadeForYou() {
+            const data = await fetchAPI('/api/search/playlists?query=romantic love hindi&page=0&limit=10');
+            if (data?.data?.results) {
+                displayPlaylists(data.data.results.slice(0, 6), 'madeForYou');
+            } else {
+                document.getElementById('madeForYou').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
             }
         }
 
