@@ -27,6 +27,7 @@
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+            --header-height: 60px;
         }
 
         html {
@@ -71,9 +72,10 @@
             background: var(--bg-hover);
         }
 
+        /* ✅ HEADER - COMPACT & SINGLE LINE */
         .header {
             background: var(--bg-secondary);
-            padding: 0.75rem;
+            height: var(--header-height);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -83,15 +85,38 @@
         }
 
         .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header-top {
+            max-width: 100%;
+            height: 100%;
+            padding: 0 0.75rem;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
+            gap: 0.75rem;
+        }
+
+        .menu-toggle {
+            background: transparent;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .menu-toggle:active {
+            transform: scale(0.9);
+        }
+
+        @media (hover: hover) {
+            .menu-toggle:hover {
+                background: var(--bg-tertiary);
+            }
         }
 
         .logo {
@@ -104,6 +129,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            flex-shrink: 0;
         }
 
         .logo i {
@@ -117,10 +143,329 @@
             50% { transform: scale(1.1); }
         }
 
-        .header-actions {
+        /* Desktop Search - Always Visible */
+        .desktop-search {
+            display: none;
+            flex: 1;
+            max-width: 600px;
+        }
+
+        @media (min-width: 768px) {
+            .desktop-search {
+                display: flex;
+            }
+        }
+
+        /* Mobile Search Icon */
+        .search-icon-mobile {
+            display: flex;
+            background: transparent;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1rem;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin-left: auto;
+        }
+
+        @media (min-width: 768px) {
+            .search-icon-mobile {
+                display: none;
+            }
+        }
+
+        .search-icon-mobile:active {
+            transform: scale(0.9);
+        }
+
+        @media (hover: hover) {
+            .search-icon-mobile:hover {
+                background: var(--bg-tertiary);
+            }
+        }
+
+        /* Mobile Search Bar (Expandable) */
+        .mobile-search-bar {
+            display: none;
+            padding: 0.5rem 0.75rem;
+            gap: 0.5rem;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            animation: slideDown 0.3s ease;
+        }
+
+        .mobile-search-bar.active {
+            display: flex;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (min-width: 768px) {
+            .mobile-search-bar {
+                display: none !important;
+            }
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .search-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 2.25rem 0.5rem 2.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: none;
+            background: var(--bg-hover);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-clear.active {
+            display: flex;
+        }
+
+        .search-select {
+            padding: 0.5rem 0.65rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            outline: none;
+            flex-shrink: 0;
+        }
+
+        .search-btn {
+            padding: 0.5rem 0.85rem;
+            border: none;
+            border-radius: 20px;
+            background: var(--accent-gradient);
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
+            gap: 0.4rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
+            flex-shrink: 0;
+        }
+
+        .search-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ✅ SIDEBAR */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: var(--bg-secondary);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-lg);
+            transition: left 0.3s ease;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            height: 70px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            padding: 0 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-item {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s;
+            position: relative;
+            text-align: left;
+        }
+
+        .sidebar-item:active {
+            transform: scale(0.98);
+        }
+
+        @media (hover: hover) {
+            .sidebar-item:hover {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+            }
+
+            .sidebar-item:hover i {
+                color: var(--accent-primary);
+            }
+        }
+
+        .sidebar-item i {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            transition: color 0.3s;
+        }
+
+        .sidebar-item span:first-of-type {
+            flex: 1;
+        }
+
+        .sidebar-item .badge {
+            position: static;
+            margin-left: auto;
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .sidebar-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 0.5rem;
+        }
+
+        .sidebar-stat {
+            text-align: center;
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+
+        .sidebar-stat .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-stat .stat-label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .icon-btn-header {
@@ -163,115 +508,7 @@
             text-align: center;
         }
 
-        .search-container {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .search-wrapper {
-            flex: 1;
-            position: relative;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.65rem 2.5rem 0.65rem 2.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            font-size: 0.85rem;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        .search-input:focus {
-            background: var(--bg-hover);
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 0.85rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            pointer-events: none;
-        }
-
-        .search-clear {
-            position: absolute;
-            right: 0.85rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: none;
-            background: var(--bg-hover);
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .search-clear.active {
-            display: flex;
-        }
-
-        .search-select {
-            padding: 0.65rem 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            font-size: 0.8rem;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            cursor: pointer;
-            outline: none;
-            min-width: 90px;
-        }
-
-        .search-btn {
-            padding: 0.65rem 1rem;
-            border: none;
-            border-radius: 20px;
-            background: var(--accent-gradient);
-            color: white;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
-        }
-
-        .search-btn:active {
-            transform: scale(0.95);
-        }
-
-        @media (min-width: 769px) {
-            .header {
-                padding: 1rem;
-            }
-            .logo {
-                font-size: 1.35rem;
-            }
-            .logo i {
-                font-size: 1.6rem;
-            }
-            .icon-btn-header {
-                width: 40px;
-                height: 40px;
-                font-size: 1rem;
-            }
-        }
-
+        /* ✅ NAV TABS */
         .nav-tabs {
             background: var(--bg-secondary);
             padding: 0.5rem;
@@ -280,7 +517,7 @@
             overflow-x: auto;
             border-bottom: 1px solid var(--border-color);
             position: sticky;
-            top: 0;
+            top: var(--header-height);
             z-index: 99;
         }
 
@@ -335,17 +572,7 @@
             font-size: 0.85rem;
         }
 
-        @media (min-width: 769px) {
-            .nav-tabs {
-                padding: 0.75rem 1rem;
-                gap: 0.6rem;
-            }
-            .tab {
-                padding: 0.6rem 1.25rem;
-                font-size: 0.9rem;
-            }
-        }
-
+        /* ✅ CONTAINER */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -414,19 +641,6 @@
             .section-action:hover {
                 border-color: var(--accent-primary);
                 color: var(--accent-primary);
-            }
-        }
-
-        @media (min-width: 769px) {
-            .section-title {
-                font-size: 1.6rem;
-            }
-            .section-title i {
-                font-size: 1.4rem;
-            }
-            .section-action {
-                padding: 0.5rem 1rem;
-                font-size: 0.85rem;
             }
         }
 
@@ -544,16 +758,9 @@
                 box-shadow: var(--shadow-lg);
                 border-color: var(--accent-primary);
             }
-            
+
             .card:hover::before {
                 opacity: 0.05;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .card {
-                border-radius: 10px;
-                padding: 1rem;
             }
         }
 
@@ -565,13 +772,6 @@
             overflow: hidden;
             border-radius: 6px;
             background: var(--bg-tertiary);
-        }
-
-        @media (min-width: 769px) {
-            .card-img-container {
-                border-radius: 8px;
-                margin-bottom: 0.85rem;
-            }
         }
 
         .card-img {
@@ -610,19 +810,10 @@
                 opacity: 0;
                 transform: scale(0.8);
             }
-            
+
             .card:hover .play-overlay {
                 opacity: 1;
                 transform: scale(1);
-            }
-        }
-
-        @media (min-width: 769px) {
-            .play-overlay {
-                bottom: 0.6rem;
-                right: 0.6rem;
-                width: 44px;
-                height: 44px;
             }
         }
 
@@ -630,12 +821,6 @@
             font-size: 0.9rem;
             color: white;
             margin-left: 2px;
-        }
-
-        @media (min-width: 769px) {
-            .play-overlay i {
-                font-size: 1.1rem;
-            }
         }
 
         .card-badge {
@@ -673,16 +858,6 @@
             white-space: nowrap;
         }
 
-        @media (min-width: 769px) {
-            .card-title {
-                font-size: 0.95rem;
-                margin-bottom: 0.35rem;
-            }
-            .card-subtitle {
-                font-size: 0.8rem;
-            }
-        }
-
         .card-actions {
             display: flex;
             gap: 0.4rem;
@@ -697,17 +872,10 @@
                 opacity: 0;
                 transform: translateY(5px);
             }
-            
+
             .card:hover .card-actions {
                 opacity: 1;
                 transform: translateY(0);
-            }
-        }
-
-        @media (min-width: 769px) {
-            .card-actions {
-                gap: 0.5rem;
-                margin-top: 0.85rem;
             }
         }
 
@@ -740,15 +908,6 @@
             }
         }
 
-        @media (min-width: 769px) {
-            .icon-btn {
-                padding: 0.5rem;
-                width: 34px;
-                height: 34px;
-                font-size: 0.8rem;
-            }
-        }
-
         .icon-btn.active {
             background: var(--accent-primary);
         }
@@ -758,6 +917,7 @@
             border-radius: 50%;
         }
 
+        /* ✅ MUSIC PLAYER */
         .music-player {
             position: fixed;
             bottom: 0;
@@ -889,49 +1049,12 @@
             overflow: hidden;
         }
 
-        .progress::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
         .progress-filled {
             height: 100%;
             background: var(--accent-gradient);
             border-radius: 3px;
             transition: width 0.1s linear;
             position: relative;
-        }
-
-        .progress-filled::after {
-            content: '';
-            position: absolute;
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        @media (hover: hover) {
-            .progress:hover .progress-filled::after {
-                opacity: 1;
-            }
         }
 
         .player-controls-full {
@@ -981,12 +1104,6 @@
             box-shadow: 0 6px 16px rgba(220, 20, 60, 0.4);
         }
 
-        @media (hover: hover) {
-            .control-btn.play-btn:hover {
-                box-shadow: 0 8px 20px rgba(220, 20, 60, 0.5);
-            }
-        }
-
         .player-extras-row {
             display: flex;
             justify-content: space-between;
@@ -1030,6 +1147,7 @@
             transition: width 0.1s;
         }
 
+        /* ✅ FULLSCREEN PLAYER */
         .fullscreen-player {
             position: fixed;
             top: 0;
@@ -1040,7 +1158,7 @@
             z-index: 2000;
             display: none;
             flex-direction: column;
-            overflow-y: auto;
+            overflow: hidden;
         }
 
         .fullscreen-player.active {
@@ -1052,43 +1170,44 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .fullscreen-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
         }
 
         .fullscreen-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 1rem;
+            padding: 1.5rem;
             max-width: 600px;
             margin: 0 auto;
             width: 100%;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
         }
 
         .fullscreen-artwork {
-            width: 100%;
-            aspect-ratio: 1;
-            border-radius: 12px;
+            width: 280px;
+            height: 280px;
+            border-radius: 16px;
             overflow: hidden;
-            margin-bottom: 2rem;
+            margin: 0 auto 2rem;
             box-shadow: var(--shadow-lg);
             position: relative;
+            flex-shrink: 0;
         }
 
         .fullscreen-artwork img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            animation: rotate 20s linear infinite;
-            animation-play-state: paused;
-        }
-
-        .fullscreen-artwork.playing img {
-            animation-play-state: running;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
         }
 
         .fullscreen-info {
@@ -1097,15 +1216,172 @@
         }
 
         .fullscreen-info h2 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin-bottom: 0.5rem;
+            font-weight: 700;
         }
 
         .fullscreen-info p {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-secondary);
         }
 
+        .fullscreen-progress {
+            margin-bottom: 2rem;
+        }
+
+        .fullscreen-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .fullscreen-control-btn {
+            background: transparent;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .fullscreen-control-btn:active {
+            transform: scale(0.9);
+        }
+
+        @media (hover: hover) {
+            .fullscreen-control-btn:hover {
+                color: var(--text-primary);
+                background: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .fullscreen-control-btn.active {
+            color: var(--accent-primary);
+        }
+
+        .fullscreen-control-btn.play-btn-large {
+            width: 64px;
+            height: 64px;
+            font-size: 1.5rem;
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 8px 20px rgba(220, 20, 60, 0.4);
+        }
+
+        .fullscreen-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .fullscreen-action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .fullscreen-action-btn:active {
+            transform: scale(0.9);
+        }
+
+        @media (hover: hover) {
+            .fullscreen-action-btn:hover {
+                background: var(--accent-primary);
+                color: white;
+            }
+        }
+
+        .fullscreen-queue {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s ease;
+            z-index: 10;
+        }
+
+        .fullscreen-queue-header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .fullscreen-queue-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .fullscreen-queue-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        @media (max-width: 1023px) {
+            .fullscreen-queue {
+                position: absolute;
+                top: 0;
+                right: -100%;
+                width: 100%;
+                max-width: 100%;
+                height: 100%;
+            }
+
+            .fullscreen-player.queue-open .fullscreen-queue {
+                right: 0;
+            }
+
+            .fullscreen-player.queue-open .fullscreen-content {
+                transform: translateX(-100%);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .fullscreen-queue {
+                position: relative;
+                right: 0;
+                width: 350px;
+                max-width: 350px;
+                height: 100%;
+            }
+
+            .fullscreen-content {
+                transform: translateX(0) !important;
+                max-width: 100%;
+                padding: 2rem;
+            }
+
+            .fullscreen-artwork {
+                width: 320px;
+                height: 320px;
+            }
+        }
+
+        /* ✅ MODALS */
         .modal {
             display: none;
             position: fixed;
@@ -1227,23 +1503,6 @@
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-        }
-
-        @media (hover: hover) {
-            .btn:hover:not(:disabled) {
-                box-shadow: 0 6px 16px rgba(220, 20, 60, 0.4);
-            }
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            box-shadow: none;
-        }
-
-        @media (hover: hover) {
-            .btn-secondary:hover {
-                background: var(--bg-hover);
-            }
         }
 
         .queue-item,
@@ -1486,473 +1745,626 @@
                 color: var(--accent-primary);
             }
         }
-
-        .load-more-btn .spinner {
-            width: 20px;
-            height: 20px;
-            border-width: 3px;
-            margin: 0;
-        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="header-top">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <button class="menu-toggle" onclick="toggleSidebar()" title="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="logo">
                     <i class="fas fa-compact-disc"></i>
                     <span>MusicBox</span>
                 </div>
-                <div class="header-actions">
-                    <button class="icon-btn-header" onclick="openRecentlyPlayed()" title="Recent">
-                        <i class="fas fa-history"></i>
-                        <span class="badge" id="recentBadge" style="display:none;">0</span>
-                    </button>
-                    <button class="icon-btn-header" onclick="openFavorites()" title="Favorites">
-                        <i class="fas fa-heart"></i>
-                        <span class="badge" id="favBadge" style="display:none;">0</span>
-                    </button>
-                    <button class="icon-btn-header" onclick="openSettings()" title="Settings">
-                        <i class="fas fa-cog"></i>
+
+                <!-- Desktop Search (always visible) -->
+                <div class="search-container desktop-search">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search songs, artists, albums..." enterkeyhint="search">
+                        <div class="search-clear" id="searchClear" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                    <select class="search-select" id="searchType">
+                        <option value="songs">Songs</option>
+                        <option value="albums">Albums</option>
+                        <option value="artists">Artists</option>
+                        <option value="playlists">Playlists</option>
+                    </select>
+                    <button class="search-btn" onclick="search()">
+                        <i class="fas fa-search"></i>
                     </button>
                 </div>
+
+                <!-- Mobile Search Icon -->
+                <button class="search-icon-mobile" onclick="toggleMobileSearch()" title="Search">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
-            <div class="search-container">
+
+            <!-- Mobile Search Bar (hidden by default) -->
+            <div class="mobile-search-bar" id="mobileSearchBar">
                 <div class="search-wrapper">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" id="searchInput" placeholder="Search songs, artists, albums..." enterkeyhint="search">
-                    <div class="search-clear" id="searchClear" onclick="clearSearch()">
+                    <input type="text" class="search-input" id="searchInputMobile" placeholder="Search songs, artists, albums..." enterkeyhint="search">
+                    <div class="search-clear" id="searchClearMobile" onclick="clearMobileSearch()">
                         <i class="fas fa-times"></i>
                     </div>
                 </div>
-                <select class="search-select" id="searchType">
+                <select class="search-select" id="searchTypeMobile">
                     <option value="songs">Songs</option>
                     <option value="albums">Albums</option>
                     <option value="artists">Artists</option>
                     <option value="playlists">Playlists</option>
                 </select>
-                <button class="search-btn" onclick="search()">
+                <button class="search-btn" onclick="searchMobile()">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
         </div>
-    </div>
 
-    <div class="nav-tabs" id="navTabs">
-        <button class="tab active" onclick="switchTab('home')">
-            <i class="fas fa-home"></i> Home
-        </button>
-        <button class="tab" onclick="switchTab('trending-playlists')">
-            <i class="fas fa-fire"></i> Playlists
-        </button>
-        <button class="tab" onclick="switchTab('trending-albums')">
-            <i class="fas fa-compact-disc"></i> Albums
-        </button>
-        <button class="tab" onclick="switchTab('search-results')">
-            <i class="fas fa-search"></i> Search
-        </button>
-        <button class="tab" onclick="switchTab('queue')">
-            <i class="fas fa-list-ol"></i> Queue
-            <span class="badge" id="queueBadge" style="display:none;">0</span>
-        </button>
-        <button class="tab" onclick="switchTab('my-playlists')">
-            <i class="fas fa-heart"></i> My Lists
-        </button>
-    </div>
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-    <div class="container">
-        <div class="content-section active" id="home">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="statSongs">0</div>
-                    <div class="stat-label">Songs Played</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="statPlaylists">0</div>
-                    <div class="stat-label">Playlists</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="statFavorites">0</div>
-                    <div class="stat-label">Favorites</div>
-                </div>
-            </div>
-
-            <!-- Trending Now -->
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-fire"></i>
-                    Trending Now
-                </h2>
-                <button class="section-action" onclick="loadTrendingPlaylistsTab()">
-                    See All <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            <div class="grid" id="trendingNow"></div>
-
-            <!-- Popular Albums -->
-            <div class="section-header" style="margin-top: 2rem;">
-                <h2 class="section-title">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
                     <i class="fas fa-compact-disc"></i>
-                    Popular Albums
-                </h2>
-                <button class="section-action" onclick="loadTrendingAlbumsTab()">
-                    See All <i class="fas fa-chevron-right"></i>
+                    <span>MusicBox</span>
+                </div>
+                <button class="icon-btn-header" onclick="closeSidebar()">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="grid" id="popularAlbums"></div>
 
-            <!-- Editorial Picks -->
-            <div class="section-header" style="margin-top: 2rem;">
-                <h2 class="section-title">
-                    <i class="fas fa-star"></i>
-                    Editorial Picks
-                </h2>
-                <button class="section-action" onclick="loadTrendingAlbumsTab()">
-                    See All <i class="fas fa-chevron-right"></i>
-                </button>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">Library</h3>
+                    <button class="sidebar-item" onclick="openRecentlyPlayed(); closeSidebar();">
+                        <i class="fas fa-history"></i>
+                        <span>Recently Played</span>
+                        <span class="badge" id="sidebarRecentBadge" style="display:none;">0</span>
+                    </button>
+                    <button class="sidebar-item" onclick="openFavorites(); closeSidebar();">
+                        <i class="fas fa-heart"></i>
+                        <span>Favorites</span>
+                        <span class="badge" id="sidebarFavBadge" style="display:none;">0</span>
+                    </button>
+                    <button class="sidebar-item" onclick="switchTab('my-playlists'); closeSidebar();">
+                        <i class="fas fa-list-music"></i>
+                        <span>My Playlists</span>
+                        <span class="badge" id="sidebarPlaylistBadge" style="display:none;">0</span>
+                    </button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">Browse</h3>
+                    <button class="sidebar-item" onclick="switchTab('home'); closeSidebar();">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </button>
+                    <button class="sidebar-item" onclick="loadTrendingPlaylistsTab(); closeSidebar();">
+                        <i class="fas fa-fire"></i>
+                        <span>Trending Playlists</span>
+                    </button>
+                    <button class="sidebar-item" onclick="loadTrendingAlbumsTab(); closeSidebar();">
+                        <i class="fas fa-compact-disc"></i>
+                        <span>Trending Albums</span>
+                    </button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3 class="sidebar-section-title">Other</h3>
+                    <button class="sidebar-item" onclick="openSettings(); closeSidebar();">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </button>
+                    <button class="sidebar-item" onclick="switchTab('queue'); closeSidebar();">
+                        <i class="fas fa-list-ol"></i>
+                        <span>Play Queue</span>
+                        <span class="badge" id="sidebarQueueBadge" style="display:none;">0</span>
+                    </button>
+                </div>
             </div>
-            <div class="grid" id="editorialPicks"></div>
 
-            <!-- Top Charts -->
-            <div class="section-header" style="margin-top: 2rem;">
-                <h2 class="section-title">
-                    <i class="fas fa-chart-line"></i>
-                    Top Charts
-                </h2>
-                <button class="section-action" onclick="loadTrendingPlaylistsTab()">
-                    See All <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            <div class="grid" id="topCharts"></div>
-
-            <!-- Made For You -->
-            <div class="section-header" style="margin-top: 2rem;">
-                <h2 class="section-title">
-                    <i class="fas fa-heart"></i>
-                    Made For You
-                </h2>
-                <button class="section-action" onclick="loadTrendingPlaylistsTab()">
-                    See All <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            <div class="grid" id="madeForYou"></div>
-
-            <!-- Refresh Button -->
-            <div style="text-align: center; margin-top: 2rem; padding-bottom: 2rem;">
-                <button class="btn" onclick="loadHome()" style="min-width: 200px;">
-                    <i class="fas fa-sync-alt"></i>
-                    Refresh All
-                </button>
+            <div class="sidebar-footer">
+                <div class="sidebar-stats">
+                    <div class="sidebar-stat">
+                        <span class="stat-value" id="sidebarStatSongs">0</span>
+                        <span class="stat-label">Songs</span>
+                    </div>
+                    <div class="sidebar-stat">
+                        <span class="stat-value" id="sidebarStatPlaylists">0</span>
+                        <span class="stat-label">Playlists</span>
+                    </div>
+                    <div class="sidebar-stat">
+                        <span class="stat-value" id="sidebarStatFavorites">0</span>
+                        <span class="stat-label">Favorites</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="content-section" id="trending-playlists">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-fire"></i>
-                    Trending Playlists
-                </h2>
-            </div>
-            <div class="filter-chips">
-                <div class="chip active" onclick="filterPlaylists('all')">All</div>
-                <div class="chip" onclick="filterPlaylists('hindi')">Hindi</div>
-                <div class="chip" onclick="filterPlaylists('english')">English</div>
-                <div class="chip" onclick="filterPlaylists('punjabi')">Punjabi</div>
-                <div class="chip" onclick="filterPlaylists('romantic')">Romantic</div>
-                <div class="chip" onclick="filterPlaylists('party')">Party</div>
-            </div>
-            <div class="grid" id="trendingPlaylistsGrid"></div>
-        </div>
-
-        <div class="content-section" id="trending-albums">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-compact-disc"></i>
-                    Trending Albums
-                </h2>
-            </div>
-            <div class="filter-chips">
-                <div class="chip active" onclick="filterAlbums('all')">All</div>
-                <div class="chip" onclick="filterAlbums('2024')">2024</div>
-                <div class="chip" onclick="filterAlbums('2023')">2023</div>
-                <div class="chip" onclick="filterAlbums('bollywood')">Bollywood</div>
-            </div>
-            <div class="grid" id="trendingAlbumsGrid"></div>
-        </div>
-
-        <div class="content-section" id="search-results">
-            <div class="section-header">
-                <h2 class="section-title" id="searchResultsTitle">
-                    <i class="fas fa-search"></i>
-                    Search Results
-                </h2>
-            </div>
-            <div class="section-info" id="searchResultsInfo"></div>
-            <div class="grid" id="searchResultsGrid"></div>
-            <div class="load-more-container" id="loadMoreContainer">
-                <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">
-                    <i class="fas fa-chevron-down"></i>
-                    <span id="loadMoreText">Load More</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="content-section" id="queue">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-list-ol"></i>
-                    Play Queue
-                </h2>
-                <button class="section-action" onclick="clearQueue()">
-                    <i class="fas fa-trash"></i> Clear
-                </button>
-            </div>
-            <div class="section-info">
-                <span><i class="fas fa-music"></i> <span id="queueCount">0</span> songs</span>
-            </div>
-            <div id="queueList"></div>
-        </div>
-
-        <div class="content-section" id="my-playlists">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-heart"></i>
-                    My Playlists
-                </h2>
-            </div>
-            <button class="btn" style="margin-bottom: 1.5rem; width: 100%;" onclick="showCreatePlaylist()">
-                <i class="fas fa-plus"></i>
-                Create New Playlist
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs" id="navTabs">
+            <button class="tab active" onclick="switchTab('home')">
+                <i class="fas fa-home"></i> Home
             </button>
-            <div class="grid" id="myPlaylistsGrid"></div>
-        </div>
-    </div>
-
-    <div class="music-player">
-        <div class="player-mini" onclick="togglePlayerExpand()">
-            <div class="player-mini-content">
-                <img src="https://via.placeholder.com/50" alt="Art" class="player-img" id="playerImgMini">
-                <div class="player-details">
-                    <h4 id="playerTitleMini">No song playing</h4>
-                    <p id="playerArtistMini">Select a song to play</p>
-                </div>
-                <div class="player-mini-controls">
-                    <button class="control-btn-mini" onclick="toggleFavorite(event)">
-                        <i class="far fa-heart" id="favoriteIcon"></i>
-                    </button>
-                    <button class="control-btn-mini play-btn" id="playPauseBtnMini" onclick="togglePlayPause(event)">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="control-btn-mini" onclick="nextSong(event)">
-                        <i class="fas fa-step-forward"></i>
-                    </button>
-                </div>
-            </div>
+            <button class="tab" onclick="switchTab('trending-playlists')">
+                <i class="fas fa-fire"></i> Playlists
+            </button>
+            <button class="tab" onclick="switchTab('trending-albums')">
+                <i class="fas fa-compact-disc"></i> Albums
+            </button>
+            <button class="tab" onclick="switchTab('search-results')">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <button class="tab" onclick="switchTab('queue')">
+                <i class="fas fa-list-ol"></i> Queue
+                <span class="badge" id="queueBadge" style="display:none;">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('my-playlists')">
+                <i class="fas fa-heart"></i> My Lists
+            </button>
         </div>
 
-        <div class="player-full" id="playerFull">
-            <div class="player-full-content">
-                <div class="player-progress-wrapper">
-                    <div class="progress-bar">
-                        <span class="time" id="currentTime">0:00</span>
-                        <div class="progress" id="progressBar" onclick="seekSong(event)">
-                            <div class="progress-filled" id="progressFilled"></div>
-                        </div>
-                        <span class="time" id="duration">0:00</span>
+        <!-- Main Container -->
+        <div class="container">
+            <!-- Home Section -->
+            <div class="content-section active" id="home">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statSongs">0</div>
+                        <div class="stat-label">Songs Played</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPlaylists">0</div>
+                        <div class="stat-label">Playlists</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statFavorites">0</div>
+                        <div class="stat-label">Favorites</div>
                     </div>
                 </div>
 
-                <div class="player-controls-full">
-                    <button class="control-btn" onclick="toggleShuffle()" id="shuffleBtn" title="Shuffle">
-                        <i class="fas fa-random"></i>
-                    </button>
-                    <button class="control-btn" onclick="previousSong()">
-                        <i class="fas fa-step-backward"></i>
-                    </button>
-                    <button class="control-btn play-btn" id="playPauseBtn" onclick="togglePlayPause(event)">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="control-btn" onclick="nextSong(event)">
-                        <i class="fas fa-step-forward"></i>
-                    </button>
-                    <button class="control-btn" onclick="toggleRepeat()" id="repeatBtn" title="Repeat">
-                        <i class="fas fa-redo"></i>
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-fire"></i>
+                        Trending Now
+                    </h2>
+                    <button class="section-action" onclick="loadTrendingPlaylistsTab()">
+                        See All <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
+                <div class="grid" id="trendingNow"></div>
 
-                <div class="player-extras-row">
-                    <div class="player-options">
-                        <button class="control-btn" onclick="openFullscreenPlayer()" title="Full Screen">
-                            <i class="fas fa-expand"></i>
+                <div class="section-header" style="margin-top: 2rem;">
+                    <h2 class="section-title">
+                        <i class="fas fa-compact-disc"></i>
+                        Popular Albums
+                    </h2>
+                    <button class="section-action" onclick="loadTrendingAlbumsTab()">
+                        See All <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="grid" id="popularAlbums"></div>
+
+                <div class="section-header" style="margin-top: 2rem;">
+                    <h2 class="section-title">
+                        <i class="fas fa-star"></i>
+                        Editorial Picks
+                    </h2>
+                    <button class="section-action" onclick="loadTrendingAlbumsTab()">
+                        See All <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="grid" id="editorialPicks"></div>
+
+                <div class="section-header" style="margin-top: 2rem;">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Top Charts
+                    </h2>
+                    <button class="section-action" onclick="loadTrendingPlaylistsTab()">
+                        See All <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="grid" id="topCharts"></div>
+
+                <div class="section-header" style="margin-top: 2rem;">
+                    <h2 class="section-title">
+                        <i class="fas fa-heart"></i>
+                        Made For You
+                    </h2>
+                    <button class="section-action" onclick="loadTrendingPlaylistsTab()">
+                        See All <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="grid" id="madeForYou"></div>
+
+                <div style="text-align: center; margin-top: 2rem; padding-bottom: 2rem;">
+                    <button class="btn" onclick="loadHome()" style="min-width: 200px;">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trending Playlists Section -->
+            <div class="content-section" id="trending-playlists">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-fire"></i>
+                        Trending Playlists
+                    </h2>
+                </div>
+                <div class="filter-chips">
+                    <div class="chip active" onclick="filterPlaylists('all')">All</div>
+                    <div class="chip" onclick="filterPlaylists('hindi')">Hindi</div>
+                    <div class="chip" onclick="filterPlaylists('english')">English</div>
+                    <div class="chip" onclick="filterPlaylists('punjabi')">Punjabi</div>
+                    <div class="chip" onclick="filterPlaylists('romantic')">Romantic</div>
+                    <div class="chip" onclick="filterPlaylists('party')">Party</div>
+                </div>
+                <div class="grid" id="trendingPlaylistsGrid"></div>
+            </div>
+
+            <!-- Trending Albums Section -->
+            <div class="content-section" id="trending-albums">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-compact-disc"></i>
+                        Trending Albums
+                    </h2>
+                </div>
+                <div class="filter-chips">
+                    <div class="chip active" onclick="filterAlbums('all')">All</div>
+                    <div class="chip" onclick="filterAlbums('2024')">2024</div>
+                    <div class="chip" onclick="filterAlbums('2023')">2023</div>
+                    <div class="chip" onclick="filterAlbums('bollywood')">Bollywood</div>
+                </div>
+                <div class="grid" id="trendingAlbumsGrid"></div>
+            </div>
+
+            <!-- Search Results Section -->
+            <div class="content-section" id="search-results">
+                <div class="section-header">
+                    <h2 class="section-title" id="searchResultsTitle">
+                        <i class="fas fa-search"></i>
+                        Search Results
+                    </h2>
+                </div>
+                <div class="section-info" id="searchResultsInfo"></div>
+                <div class="grid" id="searchResultsGrid"></div>
+                <div class="load-more-container" id="loadMoreContainer">
+                    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">
+                        <i class="fas fa-chevron-down"></i>
+                        <span id="loadMoreText">Load More</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Queue Section -->
+            <div class="content-section" id="queue">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-list-ol"></i>
+                        Play Queue
+                    </h2>
+                    <button class="section-action" onclick="clearQueue()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                <div class="section-info">
+                    <span><i class="fas fa-music"></i> <span id="queueCount">0</span> songs</span>
+                </div>
+                <div id="queueList"></div>
+            </div>
+
+            <!-- My Playlists Section -->
+            <div class="content-section" id="my-playlists">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-heart"></i>
+                        My Playlists
+                    </h2>
+                </div>
+                <button class="btn" style="margin-bottom: 1.5rem; width: 100%;" onclick="showCreatePlaylist()">
+                    <i class="fas fa-plus"></i>
+                    Create New Playlist
+                </button>
+                <div class="grid" id="myPlaylistsGrid"></div>
+            </div>
+        </div>
+
+        <!-- Music Player -->
+        <div class="music-player">
+            <div class="player-mini" onclick="togglePlayerExpand()">
+                <div class="player-mini-content">
+                    <img src="https://via.placeholder.com/50" alt="Art" class="player-img" id="playerImgMini">
+                    <div class="player-details">
+                        <h4 id="playerTitleMini">No song playing</h4>
+                        <p id="playerArtistMini">Select a song to play</p>
+                    </div>
+                    <div class="player-mini-controls">
+                        <button class="control-btn-mini" onclick="toggleFavorite(event)">
+                            <i class="far fa-heart" id="favoriteIcon"></i>
                         </button>
-                        <button class="control-btn" onclick="openAddToPlaylist()" title="Add to Playlist">
+                        <button class="control-btn-mini play-btn" id="playPauseBtnMini" onclick="togglePlayPause(event)">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="control-btn-mini" onclick="nextSong(event)">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-full" id="playerFull">
+                <div class="player-full-content">
+                    <div class="player-progress-wrapper">
+                        <div class="progress-bar">
+                            <span class="time" id="currentTime">0:00</span>
+                            <div class="progress" id="progressBar" onclick="seekSong(event)">
+                                <div class="progress-filled" id="progressFilled"></div>
+                            </div>
+                            <span class="time" id="duration">0:00</span>
+                        </div>
+                    </div>
+
+                    <div class="player-controls-full">
+                        <button class="control-btn" onclick="toggleShuffle()" id="shuffleBtn" title="Shuffle">
+                            <i class="fas fa-random"></i>
+                        </button>
+                        <button class="control-btn" onclick="previousSong()">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button class="control-btn play-btn" id="playPauseBtn" onclick="togglePlayPause(event)">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="control-btn" onclick="nextSong(event)">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                        <button class="control-btn" onclick="toggleRepeat()" id="repeatBtn" title="Repeat">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+
+                    <div class="player-extras-row">
+                        <div class="player-options">
+                            <button class="control-btn" onclick="openFullscreenPlayer()" title="Full Screen">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button class="control-btn" onclick="openAddToPlaylist()" title="Add to Playlist">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="control-btn" onclick="downloadCurrentSong()" title="Download">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="control-btn" onclick="shareCurrentSong()" title="Share">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                        <div class="volume-control">
+                            <i class="fas fa-volume-up"></i>
+                            <div class="volume-slider" onclick="setVolume(event)">
+                                <div class="volume-filled" id="volumeFilled"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fullscreen Player -->
+        <div class="fullscreen-player" id="fullscreenPlayer">
+            <div class="fullscreen-header">
+                <button class="icon-btn-header" onclick="closeFullscreenPlayer()">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <h3>Now Playing</h3>
+                <button class="icon-btn-header" onclick="toggleFullscreenQueue()">
+                    <i class="fas fa-list" id="fullscreenQueueIcon"></i>
+                </button>
+            </div>
+
+            <div class="fullscreen-main" id="fullscreenMain">
+                <div class="fullscreen-content">
+                    <div class="fullscreen-artwork" id="fullscreenArtwork">
+                        <img src="https://via.placeholder.com/400" alt="Album Art" id="fullscreenImg">
+                    </div>
+                    <div class="fullscreen-info">
+                        <h2 id="fullscreenTitle">Song Title</h2>
+                        <p id="fullscreenArtist">Artist Name</p>
+                    </div>
+
+                    <div class="fullscreen-progress">
+                        <div class="progress-bar">
+                            <span class="time" id="fullscreenCurrentTime">0:00</span>
+                            <div class="progress" id="fullscreenProgressBar" onclick="seekSongFullscreen(event)">
+                                <div class="progress-filled" id="fullscreenProgressFilled"></div>
+                            </div>
+                            <span class="time" id="fullscreenDuration">0:00</span>
+                        </div>
+                    </div>
+
+                    <div class="fullscreen-controls">
+                        <button class="fullscreen-control-btn" onclick="toggleShuffle()" id="fullscreenShuffleBtn" title="Shuffle">
+                            <i class="fas fa-random"></i>
+                        </button>
+                        <button class="fullscreen-control-btn" onclick="previousSong()">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button class="fullscreen-control-btn play-btn-large" id="fullscreenPlayPauseBtn" onclick="togglePlayPause(event)">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="fullscreen-control-btn" onclick="nextSong(event)">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                        <button class="fullscreen-control-btn" onclick="toggleRepeat()" id="fullscreenRepeatBtn" title="Repeat">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+
+                    <div class="fullscreen-actions">
+                        <button class="fullscreen-action-btn" onclick="toggleFavorite(event)" title="Favorite">
+                            <i class="far fa-heart" id="fullscreenFavoriteIcon"></i>
+                        </button>
+                        <button class="fullscreen-action-btn" onclick="openAddToPlaylist()" title="Add to Playlist">
                             <i class="fas fa-plus"></i>
                         </button>
-                        <button class="control-btn" onclick="downloadCurrentSong()" title="Download">
+                        <button class="fullscreen-action-btn" onclick="downloadCurrentSong()" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="control-btn" onclick="shareCurrentSong()" title="Share">
+                        <button class="fullscreen-action-btn" onclick="shareCurrentSong()" title="Share">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
-                    <div class="volume-control">
-                        <i class="fas fa-volume-up"></i>
-                        <div class="volume-slider" onclick="setVolume(event)">
-                            <div class="volume-filled" id="volumeFilled"></div>
-                        </div>
+                </div>
+
+                <div class="fullscreen-queue" id="fullscreenQueue">
+                    <div class="fullscreen-queue-header">
+                        <h3>Up Next</h3>
+                        <button class="icon-btn-header" onclick="clearQueue()">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
+                    <div class="fullscreen-queue-list" id="fullscreenQueueList"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="fullscreen-player" id="fullscreenPlayer">
-        <div class="fullscreen-header">
-            <button class="icon-btn-header" onclick="closeFullscreenPlayer()">
-                <i class="fas fa-chevron-down"></i>
-            </button>
-            <h3>Now Playing</h3>
-            <button class="icon-btn-header" onclick="openPlayerOptions()">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-        </div>
-        <div class="fullscreen-content">
-            <div class="fullscreen-artwork" id="fullscreenArtwork">
-                <img src="https://via.placeholder.com/400" alt="Album Art" id="fullscreenImg">
-            </div>
-            <div class="fullscreen-info">
-                <h2 id="fullscreenTitle">Song Title</h2>
-                <p id="fullscreenArtist">Artist Name</p>
+        <!-- Modals -->
+        <div class="modal" id="playlistModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">My Playlists</h3>
+                    <button class="close-btn" onclick="closeModal('playlistModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <button class="btn" style="width: 100%; margin-bottom: 1.25rem;" onclick="showCreatePlaylist()">
+                    <i class="fas fa-plus"></i>
+                    Create New Playlist
+                </button>
+                <div id="playlistsList"></div>
             </div>
         </div>
-    </div>
 
-    <div class="modal" id="playlistModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">My Playlists</h3>
-                <button class="close-btn" onclick="closeModal('playlistModal')">
-                    <i class="fas fa-times"></i>
+        <div class="modal" id="createPlaylistModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create Playlist</h3>
+                    <button class="close-btn" onclick="closeModal('createPlaylistModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="input-group">
+                    <label>Playlist Name</label>
+                    <input type="text" id="playlistName" placeholder="Enter playlist name">
+                </div>
+                <div class="input-group">
+                    <label>Description (Optional)</label>
+                    <input type="text" id="playlistDesc" placeholder="Add a description">
+                </div>
+                <button class="btn" style="width: 100%;" onclick="createPlaylist()">
+                    <i class="fas fa-check"></i>
+                    Create Playlist
                 </button>
             </div>
-            <button class="btn" style="width: 100%; margin-bottom: 1.25rem;" onclick="showCreatePlaylist()">
-                <i class="fas fa-plus"></i>
-                Create New Playlist
-            </button>
-            <div id="playlistsList"></div>
         </div>
-    </div>
 
-    <div class="modal" id="createPlaylistModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Create Playlist</h3>
-                <button class="close-btn" onclick="closeModal('createPlaylistModal')">
-                    <i class="fas fa-times"></i>
+        <div class="modal" id="addToPlaylistModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add to Playlist</h3>
+                    <button class="close-btn" onclick="closeModal('addToPlaylistModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="addToPlaylistList"></div>
+            </div>
+        </div>
+
+        <div class="modal" id="viewPlaylistModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="viewPlaylistTitle">Playlist</h3>
+                    <button class="close-btn" onclick="closeModal('viewPlaylistModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="viewPlaylistSongs"></div>
+            </div>
+        </div>
+
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Settings</h3>
+                    <button class="close-btn" onclick="closeModal('settingsModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="input-group">
+                    <label>Audio Quality</label>
+                    <select id="audioQuality" onchange="saveSettings()">
+                        <option value="low">Low (96kbps)</option>
+                        <option value="medium">Medium (160kbps)</option>
+                        <option value="high" selected>High (320kbps)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Playback Speed</label>
+                    <select id="playbackSpeed" onchange="changePlaybackSpeed()">
+                        <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
+                        <option value="1" selected>Normal</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                </div>
+                <button class="btn" style="width: 100%; margin-top: 1rem;" onclick="clearAllData()">
+                    <i class="fas fa-trash"></i>
+                    Clear All Data
                 </button>
             </div>
-            <div class="input-group">
-                <label>Playlist Name</label>
-                <input type="text" id="playlistName" placeholder="Enter playlist name">
-            </div>
-            <div class="input-group">
-                <label>Description (Optional)</label>
-                <input type="text" id="playlistDesc" placeholder="Add a description">
-            </div>
-            <button class="btn" style="width: 100%;" onclick="createPlaylist()">
-                <i class="fas fa-check"></i>
-                Create Playlist
-            </button>
         </div>
-    </div>
 
-    <div class="modal" id="addToPlaylistModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add to Playlist</h3>
-                <button class="close-btn" onclick="closeModal('addToPlaylistModal')">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="modal" id="favoritesModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Favorites</h3>
+                    <button class="close-btn" onclick="closeModal('favoritesModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="favoritesList"></div>
             </div>
-            <div id="addToPlaylistList"></div>
         </div>
-    </div>
 
-    <div class="modal" id="viewPlaylistModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="viewPlaylistTitle">Playlist</h3>
-                <button class="close-btn" onclick="closeModal('viewPlaylistModal')">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="modal" id="recentModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Recently Played</h3>
+                    <button class="close-btn" onclick="closeModal('recentModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="recentList"></div>
             </div>
-            <div id="viewPlaylistSongs"></div>
         </div>
-    </div>
 
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Settings</h3>
-                <button class="close-btn" onclick="closeModal('settingsModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="input-group">
-                <label>Audio Quality</label>
-                <select id="audioQuality" onchange="saveSettings()">
-                    <option value="low">Low (96kbps)</option>
-                    <option value="medium">Medium (160kbps)</option>
-                    <option value="high" selected>High (320kbps)</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label>Playback Speed</label>
-                <select id="playbackSpeed" onchange="changePlaybackSpeed()">
-                    <option value="0.5">0.5x</option>
-                    <option value="0.75">0.75x</option>
-                    <option value="1" selected>Normal</option>
-                    <option value="1.25">1.25x</option>
-                    <option value="1.5">1.5x</option>
-                    <option value="2">2x</option>
-                </select>
-            </div>
-            <button class="btn" style="width: 100%; margin-top: 1rem;" onclick="clearAllData()">
-                <i class="fas fa-trash"></i>
-                Clear All Data
-            </button>
-        </div>
-    </div>
-
-    <div class="modal" id="favoritesModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Favorites</h3>
-                <button class="close-btn" onclick="closeModal('favoritesModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="favoritesList"></div>
-        </div>
-    </div>
-
-    <div class="modal" id="recentModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Recently Played</h3>
-                <button class="close-btn" onclick="closeModal('recentModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="recentList"></div>
-        </div>
-    </div>
-
-    <audio id="audioPlayer"></audio>
+        <audio id="audioPlayer"></audio>
 
     <script>
         const API_BASE = 'https://saavn.sumit.co';
-        
+
         let currentSong = null;
         let queue = [];
         let currentIndex = -1;
@@ -1965,7 +2377,7 @@
         let playerExpanded = false;
         const audio = document.getElementById('audioPlayer');
         let currentPlaylistForAdd = null;
-        
+
         let currentContext = {
             type: null,
             id: null,
@@ -1977,7 +2389,7 @@
             hasMore: false,
             isLoading: false
         };
-        
+
         let settings = JSON.parse(localStorage.getItem('settings')) || {
             audioQuality: 'high',
             playbackSpeed: 1
@@ -2012,6 +2424,8 @@
 
         function setupSearchListener() {
             const searchInput = document.getElementById('searchInput');
+            const searchInputMobile = document.getElementById('searchInputMobile');
+
             searchInput.addEventListener('input', function(e) {
                 const clearBtn = document.getElementById('searchClear');
                 if (e.target.value.length > 0) {
@@ -2020,13 +2434,37 @@
                     clearBtn.classList.remove('active');
                 }
             });
-            
+
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     search();
                 }
             });
+
+            searchInputMobile.addEventListener('input', function(e) {
+                const clearBtn = document.getElementById('searchClearMobile');
+                if (e.target.value.length > 0) {
+                    clearBtn.classList.add('active');
+                } else {
+                    clearBtn.classList.remove('active');
+                }
+            });
+
+            searchInputMobile.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchMobile();
+                }
+            });
+        }
+
+        function toggleMobileSearch() {
+            const mobileSearchBar = document.getElementById('mobileSearchBar');
+            mobileSearchBar.classList.toggle('active');
+            if (mobileSearchBar.classList.contains('active')) {
+                document.getElementById('searchInputMobile').focus();
+            }
         }
 
         function clearSearch() {
@@ -2034,220 +2472,25 @@
             document.getElementById('searchClear').classList.remove('active');
         }
 
-        async function fetchAPI(endpoint) {
-            try {
-                console.log('Fetching:', API_BASE + endpoint);
-                const response = await fetch(`${API_BASE}${endpoint}`);
-                const data = await response.json();
-                console.log('Response:', data);
-                return data;
-            } catch (error) {
-                console.error('API Error:', error);
-                showToast('Network error', 'error');
-                return null;
+        function clearMobileSearch() {
+            document.getElementById('searchInputMobile').value = '';
+            document.getElementById('searchClearMobile').classList.remove('active');
+        }
+
+        function searchMobile() {
+            const query = document.getElementById('searchInputMobile').value.trim();
+            const type = document.getElementById('searchTypeMobile').value;
+
+            if (!query) {
+                showToast('Please enter a search term', 'warning');
+                return;
             }
+
+            document.getElementById('mobileSearchBar').classList.remove('active');
+            performSearch(query, type);
         }
 
-
-        // Only for second api
-        // Add this helper function after the fetchAPI function
-        function normalizeBackupAPIResponse(songs) {
-            return songs.map(song => {
-                // Transform image array from {quality, link} to {quality, url}
-                const normalizedImage = song.image?.map(img => ({
-                    quality: img.quality,
-                    url: img.link
-                })) || [];
-
-                // Transform downloadUrl array from {quality, link} to {quality, url}
-                const normalizedDownloadUrl = song.downloadUrl?.map(dl => ({
-                    quality: dl.quality,
-                    url: dl.link
-                })) || [];
-
-                // Transform primaryArtists string to artists.primary array
-                const artistNames = song.primaryArtists?.split(', ') || [];
-                const artistIds = song.primaryArtistsId?.split(', ') || [];
-
-                const primaryArtists = artistNames.map((name, index) => ({
-                    id: artistIds[index] || '',
-                    name: name.trim()
-                }));
-
-                // Return normalized song object
-                return {
-                    id: song.id,
-                    name: song.name,
-                    type: song.type || 'song',
-                    album: song.album,
-                    year: song.year,
-                    releaseDate: song.releaseDate,
-                    duration: parseInt(song.duration) || 0,
-                    label: song.label,
-                    explicitContent: song.explicitContent,
-                    playCount: song.playCount,
-                    language: song.language,
-                    hasLyrics: song.hasLyrics === 'true',
-                    url: song.url,
-                    copyright: song.copyright,
-                    image: normalizedImage,
-                    downloadUrl: normalizedDownloadUrl,
-                    artists: {
-                        primary: primaryArtists,
-                        featured: [],
-                        all: primaryArtists
-                    }
-                };
-            });
-        }
-        // End of helper function that is only for second api
-
-        async function loadHome() {
-            // Show loading for all sections
-            showLoading('trendingNow');
-            showLoading('popularAlbums');
-            showLoading('editorialPicks');
-            showLoading('topCharts');
-            showLoading('madeForYou');
-
-            // Load all sections parallelly
-            await Promise.all([
-                loadTrendingNow(),
-                loadPopularAlbums(),
-                loadEditorialPicks(),
-                loadTopCharts(),
-                loadMadeForYou()
-            ]);
-        }
-
-        async function loadTrendingNow() {
-            const data = await fetchAPI('/api/search/playlists?query=trending viral&page=0&limit=10');
-            if (data?.data?.results) {
-                displayPlaylists(data.data.results.slice(0, 6), 'trendingNow');
-            } else {
-                document.getElementById('trendingNow').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
-            }
-        }
-
-        async function loadPopularAlbums() {
-            const data = await fetchAPI('/api/search/albums?query=latest bollywood 2024&page=0&limit=10');
-            if (data?.data?.results) {
-                displayAlbums(data.data.results.slice(0, 6), 'popularAlbums');
-            } else {
-                document.getElementById('popularAlbums').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
-            }
-        }
-
-        async function loadEditorialPicks() {
-            const data = await fetchAPI('/api/search/albums?query=fresh music 2024&page=0&limit=10');
-            if (data?.data?.results) {
-                displayAlbums(data.data.results.slice(0, 6), 'editorialPicks');
-            } else {
-                document.getElementById('editorialPicks').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
-            }
-        }
-
-        // FIXED: Top Charts with specific playlists
-        async function loadTopCharts() {
-            try {
-                // Load multiple specific playlists
-                const [data1, data2, data3, data4] = await Promise.all([
-                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs Hindi&page=0&limit=3'),
-                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs English&page=0&limit=3'),
-                    fetchAPI('/api/search/playlists?query=Trending Today&page=0&limit=3'),
-                    fetchAPI('/api/search/playlists?query=Most Searched Songs Hindi&page=0&limit=3'),
-                    fetchAPI('/api/search/playlists?query=Punjab Se Bollywood&page=0&limit=3')
-                ]);
-
-                // Combine results
-                let combinedResults = [];
-
-                if (data1?.data?.results?.length) combinedResults.push(data1.data.results[0]);
-                if (data2?.data?.results?.length) combinedResults.push(data2.data.results[0]);
-                if (data3?.data?.results?.length) combinedResults.push(data3.data.results[0]);
-                if (data4?.data?.results?.length) combinedResults.push(data4.data.results[0]);
-
-                // If we need more to fill 6 slots, add from remaining results
-                if (combinedResults.length < 6) {
-                    const allResults = [
-                        ...(data1?.data?.results || []).slice(1),
-                        ...(data2?.data?.results || []).slice(1),
-                        ...(data3?.data?.results || []).slice(1),
-                        ...(data4?.data?.results || []).slice(1)
-                    ];
-
-                    // Remove duplicates
-                    const addedIds = new Set(combinedResults.map(r => r.id));
-                    const uniqueResults = allResults.filter(r => !addedIds.has(r.id));
-
-                    combinedResults = [...combinedResults, ...uniqueResults].slice(0, 6);
-                }
-
-                if (combinedResults.length > 0) {
-                    displayPlaylists(combinedResults, 'topCharts');
-                } else {
-                    // Fallback to generic top charts
-                    const fallbackData = await fetchAPI('/api/search/playlists?query=top 100 hindi&page=0&limit=6');
-                    if (fallbackData?.data?.results) {
-                        displayPlaylists(fallbackData.data.results.slice(0, 6), 'topCharts');
-                    } else {
-                        document.getElementById('topCharts').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading top charts:', error);
-                document.getElementById('topCharts').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
-            }
-        }
-
-        async function loadMadeForYou() {
-            const data = await fetchAPI('/api/search/playlists?query=romantic love hindi&page=0&limit=10');
-            if (data?.data?.results) {
-                displayPlaylists(data.data.results.slice(0, 6), 'madeForYou');
-            } else {
-                document.getElementById('madeForYou').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
-            }
-        }
-
-        async function loadTrendingPlaylists() {
-            showLoading('trendingPlaylistsGrid');
-            const data = await fetchAPI('/api/search/playlists?query=trending&page=0&limit=20');
-            if (data?.data?.results) {
-                displayPlaylists(data.data.results, 'trendingPlaylistsGrid');
-            }
-        }
-
-        async function loadTrendingAlbums() {
-            showLoading('trendingAlbumsGrid');
-            const data = await fetchAPI('/api/search/albums?query=2024&page=0&limit=20');
-            if (data?.data?.results) {
-                displayAlbums(data.data.results, 'trendingAlbumsGrid');
-            }
-        }
-
-        async function filterPlaylists(category) {
-            document.querySelectorAll('#trending-playlists .chip').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
-            showLoading('trendingPlaylistsGrid');
-            const query = category === 'all' ? 'trending' : category;
-            const data = await fetchAPI(`/api/search/playlists?query=${query}&page=0&limit=20`);
-            if (data?.data?.results) {
-                displayPlaylists(data.data.results, 'trendingPlaylistsGrid');
-            }
-        }
-
-        async function filterAlbums(category) {
-            document.querySelectorAll('#trending-albums .chip').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
-            showLoading('trendingAlbumsGrid');
-            const query = category === 'all' ? '2024' : category;
-            const data = await fetchAPI(`/api/search/albums?query=${query}&page=0&limit=20`);
-            if (data?.data?.results) {
-                displayAlbums(data.data.results, 'trendingAlbumsGrid');
-            }
-        }
-
-        async function search() {
+        function search() {
             const query = document.getElementById('searchInput').value.trim();
             const type = document.getElementById('searchType').value;
 
@@ -2256,6 +2499,10 @@
                 return;
             }
 
+            performSearch(query, type);
+        }
+
+        async function performSearch(query, type) {
             currentContext = {
                 type: 'search',
                 id: null,
@@ -2271,7 +2518,7 @@
                 isLoading: false,
                 searchType: type,
                 query: query,
-                loadedIds: new Set()  // Track loaded IDs
+                loadedIds: new Set()
             };
 
             switchTab('search-results');
@@ -2332,23 +2579,240 @@
                 if (currentContext.hasMore) {
                     document.getElementById('loadMoreContainer').classList.add('active');
                 }
-
-                console.log(`✅ Page 0 loaded: ${data.data.results.length} items`);
             } else {
                 document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>No results found</p></div>';
                 document.getElementById('searchResultsInfo').innerHTML = '';
             }
         }
 
-        async function loadMore() {
-            if (currentContext.isLoading || !currentContext.hasMore) {
-                console.log('⚠️ Blocked:', { isLoading: currentContext.isLoading, hasMore: currentContext.hasMore });
-                return;
-            }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
 
-            // ✅ NEW: If using backup API, no pagination available
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+
+            if (sidebar.classList.contains('active')) {
+                if (window.innerWidth < 1024) {
+                    document.body.style.overflow = 'hidden';
+                }
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('Network error', 'error');
+                return null;
+            }
+        }
+
+        function normalizeBackupAPIResponse(songs) {
+            return songs.map(song => {
+                const normalizedImage = song.image?.map(img => ({
+                    quality: img.quality,
+                    url: img.link
+                })) || [];
+
+                const normalizedDownloadUrl = song.downloadUrl?.map(dl => ({
+                    quality: dl.quality,
+                    url: dl.link
+                })) || [];
+
+                const artistNames = song.primaryArtists?.split(', ') || [];
+                const artistIds = song.primaryArtistsId?.split(', ') || [];
+
+                const primaryArtists = artistNames.map((name, index) => ({
+                    id: artistIds[index] || '',
+                    name: name.trim()
+                }));
+
+                return {
+                    id: song.id,
+                    name: song.name,
+                    type: song.type || 'song',
+                    album: song.album,
+                    year: song.year,
+                    releaseDate: song.releaseDate,
+                    duration: parseInt(song.duration) || 0,
+                    label: song.label,
+                    explicitContent: song.explicitContent,
+                    playCount: song.playCount,
+                    language: song.language,
+                    hasLyrics: song.hasLyrics === 'true',
+                    url: song.url,
+                    copyright: song.copyright,
+                    image: normalizedImage,
+                    downloadUrl: normalizedDownloadUrl,
+                    artists: {
+                        primary: primaryArtists,
+                        featured: [],
+                        all: primaryArtists
+                    }
+                };
+            });
+        }
+
+        async function loadHome() {
+            showLoading('trendingNow');
+            showLoading('popularAlbums');
+            showLoading('editorialPicks');
+            showLoading('topCharts');
+            showLoading('madeForYou');
+
+            await Promise.all([
+                loadTrendingNow(),
+                loadPopularAlbums(),
+                loadEditorialPicks(),
+                loadTopCharts(),
+                loadMadeForYou()
+            ]);
+        }
+
+        async function loadTrendingNow() {
+            const data = await fetchAPI('/api/search/playlists?query=trending viral&page=0&limit=10');
+            if (data?.data?.results) {
+                displayPlaylists(data.data.results.slice(0, 6), 'trendingNow');
+            } else {
+                document.getElementById('trendingNow').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadPopularAlbums() {
+            const data = await fetchAPI('/api/search/albums?query=latest bollywood 2024&page=0&limit=10');
+            if (data?.data?.results) {
+                displayAlbums(data.data.results.slice(0, 6), 'popularAlbums');
+            } else {
+                document.getElementById('popularAlbums').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadEditorialPicks() {
+            const data = await fetchAPI('/api/search/albums?query=fresh music 2024&page=0&limit=10');
+            if (data?.data?.results) {
+                displayAlbums(data.data.results.slice(0, 6), 'editorialPicks');
+            } else {
+                document.getElementById('editorialPicks').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadTopCharts() {
+            try {
+                const [data1, data2, data3, data4] = await Promise.all([
+                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs Hindi&page=0&limit=3'),
+                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs English&page=0&limit=3'),
+                    fetchAPI('/api/search/playlists?query=Trending Today&page=0&limit=3'),
+                    fetchAPI('/api/search/playlists?query=Most Searched Songs Hindi&page=0&limit=3')
+                ]);
+
+                let combinedResults = [];
+
+                if (data1?.data?.results?.length) combinedResults.push(data1.data.results[0]);
+                if (data2?.data?.results?.length) combinedResults.push(data2.data.results[0]);
+                if (data3?.data?.results?.length) combinedResults.push(data3.data.results[0]);
+                if (data4?.data?.results?.length) combinedResults.push(data4.data.results[0]);
+
+                if (combinedResults.length < 6) {
+                    const allResults = [
+                        ...(data1?.data?.results || []).slice(1),
+                        ...(data2?.data?.results || []).slice(1),
+                        ...(data3?.data?.results || []).slice(1),
+                        ...(data4?.data?.results || []).slice(1)
+                    ];
+
+                    const addedIds = new Set(combinedResults.map(r => r.id));
+                    const uniqueResults = allResults.filter(r => !addedIds.has(r.id));
+                    combinedResults = [...combinedResults, ...uniqueResults].slice(0, 6);
+                }
+
+                if (combinedResults.length > 0) {
+                    displayPlaylists(combinedResults, 'topCharts');
+                } else {
+                    const fallbackData = await fetchAPI('/api/search/playlists?query=top 100 hindi&page=0&limit=6');
+                    if (fallbackData?.data?.results) {
+                        displayPlaylists(fallbackData.data.results.slice(0, 6), 'topCharts');
+                    } else {
+                        document.getElementById('topCharts').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('topCharts').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadMadeForYou() {
+            const data = await fetchAPI('/api/search/playlists?query=romantic love hindi&page=0&limit=10');
+            if (data?.data?.results) {
+                displayPlaylists(data.data.results.slice(0, 6), 'madeForYou');
+            } else {
+                document.getElementById('madeForYou').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+            }
+        }
+
+        async function loadTrendingPlaylists() {
+            showLoading('trendingPlaylistsGrid');
+            const data = await fetchAPI('/api/search/playlists?query=trending&page=0&limit=20');
+            if (data?.data?.results) {
+                displayPlaylists(data.data.results, 'trendingPlaylistsGrid');
+            }
+        }
+
+        function loadTrendingPlaylistsTab() {
+            switchTab('trending-playlists');
+        }
+
+        async function loadTrendingAlbums() {
+            showLoading('trendingAlbumsGrid');
+            const data = await fetchAPI('/api/search/albums?query=2024&page=0&limit=20');
+            if (data?.data?.results) {
+                displayAlbums(data.data.results, 'trendingAlbumsGrid');
+            }
+        }
+
+        function loadTrendingAlbumsTab() {
+            switchTab('trending-albums');
+        }
+
+        async function filterPlaylists(category) {
+            document.querySelectorAll('#trending-playlists .chip').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            showLoading('trendingPlaylistsGrid');
+            const query = category === 'all' ? 'trending' : category;
+            const data = await fetchAPI(`/api/search/playlists?query=${query}&page=0&limit=20`);
+            if (data?.data?.results) {
+                displayPlaylists(data.data.results, 'trendingPlaylistsGrid');
+            }
+        }
+
+        async function filterAlbums(category) {
+            document.querySelectorAll('#trending-albums .chip').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            showLoading('trendingAlbumsGrid');
+            const query = category === 'all' ? '2024' : category;
+            const data = await fetchAPI(`/api/search/albums?query=${query}&page=0&limit=20`);
+            if (data?.data?.results) {
+                displayAlbums(data.data.results, 'trendingAlbumsGrid');
+            }
+        }
+
+        async function loadMore() {
+            if (currentContext.isLoading || !currentContext.hasMore) return;
             if (currentContext.useBackupAPI) {
-                console.log('⚠️ Using backup API - All songs already loaded');
                 document.getElementById('loadMoreContainer').classList.remove('active');
                 showToast('All songs loaded', 'info');
                 return;
@@ -2360,10 +2824,7 @@
             currentContext.isLoading = true;
             btn.disabled = true;
             btnText.textContent = 'Loading...';
-
             currentContext.currentPage++;
-
-            console.log(`🔄 Loading page ${currentContext.currentPage} for ${currentContext.type}`);
 
             let endpoint = '';
             let data = null;
@@ -2388,23 +2849,17 @@
                         endpoint = `/api/search?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`;
                 }
 
-                console.log('📡 API:', endpoint);
                 data = await fetchAPI(endpoint);
 
                 if (data?.data?.results && data.data.results.length > 0) {
                     let newItems = [];
-                    let duplicateCount = 0;
 
                     data.data.results.forEach(item => {
                         if (!currentContext.loadedIds.has(item.id)) {
                             newItems.push(item);
                             currentContext.loadedIds.add(item.id);
-                        } else {
-                            duplicateCount++;
                         }
                     });
-
-                    console.log(`✨ New: ${newItems.length}, Duplicates: ${duplicateCount}`);
 
                     if (newItems.length === 0) {
                         currentContext.isLoading = false;
@@ -2426,8 +2881,6 @@
                     } else if (searchType === 'artists') {
                         currentContext.artists = [...currentContext.artists, ...newItems];
                         displayArtists(newItems, 'searchResultsGrid', true);
-                    } else {
-                        displayMixedResults(newItems, 'searchResultsGrid', true);
                     }
 
                     const currentCount = document.querySelectorAll('#searchResultsGrid .card').length;
@@ -2436,23 +2889,17 @@
                     `;
 
                     currentContext.hasMore = data.data.results.length === 20;
-                    showToast(`+${newItems.length} loaded (Total: ${currentCount})`, 'success');
+                    showToast(`+${newItems.length} loaded`, 'success');
                 } else {
                     currentContext.hasMore = false;
                 }
 
             } else if (currentContext.type === 'playlist') {
-                // FIXED: Proper playlist pagination
                 endpoint = `/api/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
-                console.log('📡 API:', endpoint);
-
                 data = await fetchAPI(endpoint);
 
                 if (data?.data?.songs && data.data.songs.length > 0) {
-                    console.log(`📦 Received ${data.data.songs.length} songs`);
-
                     let newSongs = [];
-                    let duplicateCount = 0;
 
                     if (!currentContext.loadedIds) {
                         currentContext.loadedIds = new Set(currentContext.songs.map(s => s.id));
@@ -2462,15 +2909,10 @@
                         if (!currentContext.loadedIds.has(song.id)) {
                             newSongs.push(song);
                             currentContext.loadedIds.add(song.id);
-                        } else {
-                            duplicateCount++;
                         }
                     });
 
-                    console.log(`✨ New: ${newSongs.length}, Duplicates: ${duplicateCount}`);
-
                     if (newSongs.length === 0) {
-                        console.log('⚠️ All duplicates! Loading next page...');
                         currentContext.isLoading = false;
                         btn.disabled = false;
                         btnText.textContent = 'Load More';
@@ -2489,27 +2931,18 @@
                         <span><i class="fas fa-music"></i> ${infoMsg}</span>
                     `;
 
-                    // FIXED: Continue jab tak exactly 20 songs aa rahe hain
                     currentContext.hasMore = data.data.songs.length === 20;
-
-                    console.log(`✅ Page ${currentContext.currentPage}: +${newSongs.length} (Total: ${currentContext.songs.length})`);
-                    showToast(`+${newSongs.length} songs (Total: ${currentContext.songs.length})`, 'success');
+                    showToast(`+${newSongs.length} songs`, 'success');
                 } else {
-                    console.log('❌ No more songs from API');
                     currentContext.hasMore = false;
                 }
 
             } else if (currentContext.type === 'artist') {
                 endpoint = `/api/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
-                console.log('📡 API:', endpoint);
-
                 data = await fetchAPI(endpoint);
 
                 if (data?.data?.songs && data.data.songs.length > 0) {
-                    console.log(`📦 Received ${data.data.songs.length} songs`);
-
                     let newSongs = [];
-                    let duplicateCount = 0;
 
                     if (!currentContext.loadedIds) {
                         currentContext.loadedIds = new Set(currentContext.songs.map(s => s.id));
@@ -2519,12 +2952,8 @@
                         if (!currentContext.loadedIds.has(song.id)) {
                             newSongs.push(song);
                             currentContext.loadedIds.add(song.id);
-                        } else {
-                            duplicateCount++;
                         }
                     });
-
-                    console.log(`✨ New: ${newSongs.length}, Duplicates: ${duplicateCount}`);
 
                     if (newSongs.length === 0) {
                         currentContext.isLoading = false;
@@ -2545,14 +2974,10 @@
                         <span><i class="fas fa-music"></i> ${infoMsg}</span>
                     `;
 
-                    // FIXED: Artist API returns 10 songs per page
                     currentContext.hasMore = data.data.songs.length >= 10;
-
-                    console.log(`✅ Page ${currentContext.currentPage}: +${newSongs.length} (Total: ${currentContext.songs.length})`);
-                    showToast(`+${newSongs.length} songs (Total: ${currentContext.songs.length})`, 'success');
+                    showToast(`+${newSongs.length} songs`, 'success');
                 } else {
                     currentContext.hasMore = false;
-                    console.log('❌ No more songs');
                 }
             }
 
@@ -2563,7 +2988,6 @@
                                    currentContext.playlists?.length || 
                                    currentContext.artists?.length || 
                                    document.querySelectorAll('#searchResultsGrid .card').length;
-                console.log(`🏁 All loaded! Total: ${totalLoaded}`);
                 showToast(`All loaded! Total: ${totalLoaded}`, 'success');
             }
 
@@ -2574,18 +2998,18 @@
 
         function displaySongs(songs, gridId, append = false) {
             const grid = document.getElementById(gridId);
-            
+
             if (!songs?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found</p></div>';
                 return;
             }
-            
+
             const songsHTML = songs.map((song, index) => {
                 const imageUrl = song.image?.[2]?.url || song.image?.[1]?.url || 'https://via.placeholder.com/200';
                 const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
                 const isFav = favorites.find(f => f.id === song.id);
                 const songIndex = append ? (currentContext.songs.length - songs.length + index) : index;
-                
+
                 return `
                     <div class="card">
                         <div class="card-img-container">
@@ -2614,22 +3038,22 @@
                     </div>
                 `;
             }).join('');
-            
+
             grid.innerHTML = append ? grid.innerHTML + songsHTML : songsHTML;
         }
 
         function displayAlbums(albums, gridId, append = false) {
             const grid = document.getElementById(gridId);
-            
+
             if (!albums?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-compact-disc"></i><p>No albums found</p></div>';
                 return;
             }
-            
+
             const albumsHTML = albums.map(album => {
                 const imageUrl = album.image?.[2]?.url || album.image?.[1]?.url || 'https://via.placeholder.com/200';
                 const artistName = album.artists?.primary?.map(a => a.name).join(', ') || 'Various Artists';
-                
+
                 return `
                     <div class="card" onclick="loadAlbum('${album.id}', '${escapeHtml(album.name)}')">
                         <div class="card-img-container">
@@ -2644,21 +3068,21 @@
                     </div>
                 `;
             }).join('');
-            
+
             grid.innerHTML = append ? grid.innerHTML + albumsHTML : albumsHTML;
         }
 
         function displayPlaylists(playlists, gridId, append = false) {
             const grid = document.getElementById(gridId);
-            
+
             if (!playlists?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-list-music"></i><p>No playlists found</p></div>';
                 return;
             }
-            
+
             const playlistsHTML = playlists.map(playlist => {
                 const imageUrl = playlist.image?.[2]?.url || playlist.image?.[1]?.url || 'https://via.placeholder.com/200';
-                
+
                 return `
                     <div class="card" onclick="loadOnlinePlaylist('${playlist.id}', '${encodeURIComponent(playlist.url || '')}', '${escapeHtml(playlist.name)}')">
                         <div class="card-img-container">
@@ -2673,21 +3097,21 @@
                     </div>
                 `;
             }).join('');
-            
+
             grid.innerHTML = append ? grid.innerHTML + playlistsHTML : playlistsHTML;
         }
 
         function displayArtists(artists, gridId, append = false) {
             const grid = document.getElementById(gridId);
-            
+
             if (!artists?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-user"></i><p>No artists found</p></div>';
                 return;
             }
-            
+
             const artistsHTML = artists.map(artist => {
                 const imageUrl = artist.image?.[2]?.url || artist.image?.[1]?.url || 'https://via.placeholder.com/200';
-                
+
                 return `
                     <div class="card artist-card" onclick="loadArtistSongs('${artist.id}', '${escapeHtml(artist.name)}')">
                         <div class="card-img-container">
@@ -2701,25 +3125,25 @@
                     </div>
                 `;
             }).join('');
-            
+
             grid.innerHTML = append ? grid.innerHTML + artistsHTML : artistsHTML;
         }
 
         function displayMixedResults(results, gridId, append = false) {
             const grid = document.getElementById(gridId);
-            
+
             if (!results?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>No results found</p></div>';
                 return;
             }
-            
+
             const resultsHTML = results.map(item => {
                 const imageUrl = item.image?.[2]?.url || item.image?.[1]?.url || 'https://via.placeholder.com/200';
-                
+
                 if (item.type === 'song') {
                     const songIndex = currentContext.songs.length;
                     currentContext.songs.push(item);
-                    
+
                     return `
                         <div class="card">
                             <div class="card-img-container">
@@ -2768,7 +3192,7 @@
                 }
                 return '';
             }).join('');
-            
+
             grid.innerHTML = append ? grid.innerHTML + resultsHTML : resultsHTML;
         }
 
@@ -2809,7 +3233,7 @@
             switchTab('search-results');
             document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-compact-disc"></i> ${albumName}`;
             document.getElementById('loadMoreContainer').classList.remove('active');
-            
+
             currentContext = {
                 type: 'album',
                 id: albumId,
@@ -2820,7 +3244,7 @@
                 hasMore: false,
                 isLoading: false
             };
-            
+
             const data = await fetchAPI(`/api/albums?id=${albumId}`);
             if (data?.data?.songs) {
                 currentContext.songs = data.data.songs;
@@ -2847,19 +3271,13 @@
                 hasMore: false,
                 isLoading: false,
                 loadedIds: new Set(),
-                useBackupAPI: false  // Track which API is being used
+                useBackupAPI: false
             };
 
-            // Try primary API first
             const endpoint = `/api/playlists?id=${playlistId}&page=0&limit=20`;
-            console.log('📡 Loading playlist (Primary API):', endpoint);
-
             const data = await fetchAPI(endpoint);
 
-            // Check if primary API returned valid data
             if (data?.data?.songs && data.data.songs.length > 0) {
-                // Primary API successful
-                console.log('✅ Primary API successful');
                 currentContext.songs = data.data.songs;
                 data.data.songs.forEach(s => currentContext.loadedIds.add(s.id));
                 currentContext.hasMore = data.data.songs.length === 20;
@@ -2877,87 +3295,13 @@
 
                 if (currentContext.hasMore) {
                     document.getElementById('loadMoreContainer').classList.add('active');
-                    console.log(`✅ Playlist page 0 (Primary): ${data.data.songs.length} songs | More: YES`);
-                } else {
-                    console.log(`✅ Playlist page 0 (Primary): ${data.data.songs.length} songs | More: NO`);
                 }
-
-
-                // Only for second api
-                } else {
-                    // Primary API failed - use backup API
-                    console.log('⚠️ Primary API failed or returned empty, trying backup API...');
-
-                    try {
-                        const backupEndpoint = `https://jiosaavn-api-codyandersan.vercel.app/playlists?id=${playlistId}`;
-                        console.log('📡 Loading playlist (Backup API):', backupEndpoint);
-
-                        const backupResponse = await fetch(backupEndpoint);
-                        const backupData = await backupResponse.json();
-
-                        console.log('Backup API Response:', backupData);
-
-                        // Check different possible response formats
-                        let songs = null;
-
-                        if (backupData?.data?.songs && backupData.data.songs.length > 0) {
-                            songs = backupData.data.songs;
-                        } else if (backupData?.songs && backupData.songs.length > 0) {
-                            songs = backupData.songs;
-                        } else if (Array.isArray(backupData) && backupData.length > 0) {
-                            songs = backupData;
-                        }
-
-                        if (songs && songs.length > 0) {
-                            // ✅ NORMALIZE backup API response to match primary API format
-                            const normalizedSongs = normalizeBackupAPIResponse(songs);
-
-                            // Backup API successful
-                            currentContext.useBackupAPI = true;
-                            currentContext.songs = normalizedSongs;
-                            normalizedSongs.forEach(s => currentContext.loadedIds.add(s.id));
-                            currentContext.hasMore = false; // No pagination in backup API
-                            currentContext.totalSongs = normalizedSongs.length;
-
-                            displaySongs(normalizedSongs, 'searchResultsGrid');
-
-                            document.getElementById('searchResultsInfo').innerHTML = `
-                                <span><i class="fas fa-music"></i> ${normalizedSongs.length} songs loaded</span>
-                                <span style="margin-left: 1rem; color: var(--accent-secondary);"><i class="fas fa-info-circle"></i> Using alternate source</span>
-                            `;
-
-                            console.log(`✅ Playlist loaded (Backup API): ${normalizedSongs.length} songs`);
-                            showToast(`✓ Loaded ${normalizedSongs.length} songs from backup`, 'success');
-                        } else {
-                            // Both APIs failed
-                            document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found in this playlist</p></div>';
-                            document.getElementById('searchResultsInfo').innerHTML = '';
-                            console.log('❌ Both APIs failed to load playlist');
-                            showToast('Unable to load playlist songs', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Backup API Error:', error);
-                        document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load playlist</p><small>Please try again later</small></div>';
-                        document.getElementById('searchResultsInfo').innerHTML = '';
-                        showToast('Failed to load playlist', 'error');
-                    }
-                }
-
-                // for first api
-           /* } else {
-                // Primary API failed - use backup API
-                console.log('⚠️ Primary API failed or returned empty, trying backup API...');
-
+            } else {
                 try {
                     const backupEndpoint = `https://jiosaavn-api-codyandersan.vercel.app/playlists?id=${playlistId}`;
-                    console.log('📡 Loading playlist (Backup API):', backupEndpoint);
-
                     const backupResponse = await fetch(backupEndpoint);
                     const backupData = await backupResponse.json();
 
-                    console.log('Backup API Response:', backupData);
-
-                    // Check different possible response formats
                     let songs = null;
 
                     if (backupData?.data?.songs && backupData.data.songs.length > 0) {
@@ -2969,36 +3313,31 @@
                     }
 
                     if (songs && songs.length > 0) {
-                        // Backup API successful
-                        currentContext.useBackupAPI = true;
-                        currentContext.songs = songs;
-                        songs.forEach(s => currentContext.loadedIds.add(s.id));
-                        currentContext.hasMore = false; // No pagination in backup API
-                        currentContext.totalSongs = songs.length;
+                        const normalizedSongs = normalizeBackupAPIResponse(songs);
 
-                        displaySongs(songs, 'searchResultsGrid');
+                        currentContext.useBackupAPI = true;
+                        currentContext.songs = normalizedSongs;
+                        normalizedSongs.forEach(s => currentContext.loadedIds.add(s.id));
+                        currentContext.hasMore = false;
+                        currentContext.totalSongs = normalizedSongs.length;
+
+                        displaySongs(normalizedSongs, 'searchResultsGrid');
 
                         document.getElementById('searchResultsInfo').innerHTML = `
-                            <span><i class="fas fa-music"></i> ${songs.length} songs loaded</span>
+                            <span><i class="fas fa-music"></i> ${normalizedSongs.length} songs loaded</span>
                             <span style="margin-left: 1rem; color: var(--accent-secondary);"><i class="fas fa-info-circle"></i> Using alternate source</span>
                         `;
 
-                        console.log(`✅ Playlist loaded (Backup API): ${songs.length} songs`);
-                        showToast(`✓ Loaded ${songs.length} songs from backup`, 'success');
+                        showToast(`✓ Loaded ${normalizedSongs.length} songs from backup`, 'success');
                     } else {
-                        // Both APIs failed
                         document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found in this playlist</p></div>';
                         document.getElementById('searchResultsInfo').innerHTML = '';
-                        console.log('❌ Both APIs failed to load playlist');
-                        showToast('Unable to load playlist songs', 'error');
                     }
                 } catch (error) {
-                    console.error('Backup API Error:', error);
-                    document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load playlist</p><small>Please try again later</small></div>';
+                    document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load playlist</p></div>';
                     document.getElementById('searchResultsInfo').innerHTML = '';
-                    showToast('Failed to load playlist', 'error');
                 }
-            } */
+            }
         }
 
         async function loadArtistSongs(artistId, artistName) {
@@ -3020,16 +3359,12 @@
             };
 
             const endpoint = `/api/artists/${artistId}/songs?page=0&sortBy=popularity&sortOrder=desc`;
-            console.log('📡 Loading artist:', endpoint);
-
             const data = await fetchAPI(endpoint);
 
             if (data?.data?.songs && data.data.songs.length > 0) {
                 currentContext.songs = data.data.songs;
                 data.data.songs.forEach(s => currentContext.loadedIds.add(s.id));
                 currentContext.totalSongs = data.data.total || data.data.songs.length;
-
-                // FIXED: Artist API returns 10 songs per page, not 20!
                 currentContext.hasMore = data.data.songs.length >= 10;
 
                 displaySongs(data.data.songs, 'searchResultsGrid');
@@ -3044,9 +3379,6 @@
 
                 if (currentContext.hasMore) {
                     document.getElementById('loadMoreContainer').classList.add('active');
-                    console.log(`✅ Artist page 0: ${data.data.songs.length} songs | Load More: VISIBLE`);
-                } else {
-                    console.log(`✅ Artist page 0: ${data.data.songs.length} songs | Load More: HIDDEN`);
                 }
             } else {
                 document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found</p></div>';
@@ -3068,10 +3400,10 @@
 
         function playSong(song, songIndex = -1) {
             currentSong = song;
-            
+
             const quality = settings.audioQuality;
             let downloadUrl = null;
-            
+
             if (song.downloadUrl && song.downloadUrl.length > 0) {
                 if (quality === 'high' && song.downloadUrl[4]?.url) {
                     downloadUrl = song.downloadUrl[4].url;
@@ -3088,7 +3420,7 @@
                     }
                 }
             }
-            
+
             if (downloadUrl) {
                 audio.src = downloadUrl;
                 audio.playbackRate = settings.playbackSpeed;
@@ -3100,11 +3432,48 @@
                 updatePlayerUI();
                 updatePlayPauseButtons();
                 addToRecentlyPlayed(song);
-                
-                const fullscreenArtwork = document.getElementById('fullscreenArtwork');
-                fullscreenArtwork.classList.add('playing');
+                updateFullscreenPlayerUI();
+
+                if ('mediaSession' in navigator) {
+                    const imageUrl = song.image?.[2]?.url || song.image?.[1]?.url || 'https://via.placeholder.com/512';
+                    const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: song.name || 'Unknown Song',
+                        artist: artistName,
+                        album: song.album?.name || 'MusicBox',
+                        artwork: [
+                            { src: imageUrl, sizes: '96x96', type: 'image/jpeg' },
+                            { src: imageUrl, sizes: '128x128', type: 'image/jpeg' },
+                            { src: imageUrl, sizes: '192x192', type: 'image/jpeg' },
+                            { src: imageUrl, sizes: '256x256', type: 'image/jpeg' },
+                            { src: imageUrl, sizes: '384x384', type: 'image/jpeg' },
+                            { src: imageUrl, sizes: '512x512', type: 'image/jpeg' }
+                        ]
+                    });
+
+                    navigator.mediaSession.setActionHandler('play', () => {
+                        audio.play();
+                        isPlaying = true;
+                        updatePlayPauseButtons();
+                    });
+
+                    navigator.mediaSession.setActionHandler('pause', () => {
+                        audio.pause();
+                        isPlaying = false;
+                        updatePlayPauseButtons();
+                    });
+
+                    navigator.mediaSession.setActionHandler('previoustrack', () => {
+                        previousSong();
+                    });
+
+                    navigator.mediaSession.setActionHandler('nexttrack', () => {
+                        nextSong();
+                    });
+                }
             } else {
-                console.error('No download URL found for song:', song);
+                console.error('No download URL found');
                 showToast('Song URL unavailable', 'error');
                 return;
             }
@@ -3118,7 +3487,7 @@
                 }
                 currentIndex = queue.findIndex(s => s.id === song.id);
             }
-            
+
             updateQueueDisplay();
             updateBadges();
             updateStats();
@@ -3126,20 +3495,18 @@
 
         function togglePlayPause(event) {
             if (event) event.stopPropagation();
-            
+
             if (!currentSong) {
                 showToast('No song selected', 'warning');
                 return;
             }
-            
+
             if (isPlaying) {
                 audio.pause();
                 isPlaying = false;
-                document.getElementById('fullscreenArtwork').classList.remove('playing');
             } else {
                 audio.play();
                 isPlaying = true;
-                document.getElementById('fullscreenArtwork').classList.add('playing');
             }
             updatePlayPauseButtons();
         }
@@ -3148,12 +3515,16 @@
             const icon = isPlaying ? 'pause' : 'play';
             document.getElementById('playPauseBtn').innerHTML = `<i class="fas fa-${icon}"></i>`;
             document.getElementById('playPauseBtnMini').innerHTML = `<i class="fas fa-${icon}"></i>`;
+
+            const fullscreenBtn = document.getElementById('fullscreenPlayPauseBtn');
+            if (fullscreenBtn) fullscreenBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
         }
 
         function previousSong() {
             if (currentIndex > 0) {
                 currentIndex--;
                 playSongFromData(queue[currentIndex], currentIndex);
+                updateQueueDisplay();
             } else {
                 showToast('First song in queue', 'info');
             }
@@ -3161,12 +3532,12 @@
 
         function nextSong(event) {
             if (event) event.stopPropagation();
-            
+
             if (queue.length === 0) {
                 showToast('Queue is empty', 'warning');
                 return;
             }
-            
+
             if (repeatMode === 'all' && currentIndex === queue.length - 1) {
                 currentIndex = 0;
                 playSongFromData(queue[currentIndex], currentIndex);
@@ -3183,6 +3554,8 @@
                 isPlaying = false;
                 updatePlayPauseButtons();
             }
+
+            updateQueueDisplay();
         }
 
         function addToQueue(song) {
@@ -3209,16 +3582,178 @@
         function updateQueueDisplay() {
             const queueList = document.getElementById('queueList');
             document.getElementById('queueCount').textContent = queue.length;
-            
+
+            if (!queue.length) {
+                queueList.innerHTML = '<div class="empty-state"><i class="fas fa-list"></i><p>Queue is empty</p></div>';
+                updateFullscreenQueue();
+                return;
+            }
+
+            queueList.innerHTML = queue.map((song, index) => {
+                const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
+                const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+
+                return `
+                    <div class="queue-item ${index === currentIndex ? 'active' : ''}" onclick="playFromQueue(${index})">
+                        <img src="${imageUrl}" class="queue-img" loading="lazy">
+                        <div class="queue-info">
+                            <div class="title">${song.name || 'Unknown Song'}</div>
+                            <div class="artist">${artistName}</div>
+                        </div>
+                        <button class="icon-btn" onclick="removeFromQueue(${index}, event)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            updateFullscreenQueue();
+        }
+
+        function playFromQueue(index) {
+            currentIndex = index;
+            playSongFromData(queue[index], index);
+            updateQueueDisplay();
+        }
+
+        function removeFromQueue(index, event) {
+            event.stopPropagation();
+            queue.splice(index, 1);
+            if (currentIndex >= index && currentIndex > 0) currentIndex--;
+            updateQueueDisplay();
+            updateBadges();
+        }
+
+        function toggleShuffle() {
+            isShuffleOn = !isShuffleOn;
+            const btn = document.getElementById('shuffleBtn');
+            const fullscreenBtn = document.getElementById('fullscreenShuffleBtn');
+
+            if (btn) btn.classList.toggle('active');
+            if (fullscreenBtn) fullscreenBtn.classList.toggle('active');
+
+            showToast(isShuffleOn ? 'Shuffle on' : 'Shuffle off', 'info');
+        }
+
+        function toggleRepeat() {
+            const modes = ['off', 'all', 'one'];
+            const currentModeIndex = modes.indexOf(repeatMode);
+            repeatMode = modes[(currentModeIndex + 1) % modes.length];
+
+            const btn = document.getElementById('repeatBtn');
+            const fullscreenBtn = document.getElementById('fullscreenRepeatBtn');
+
+            if (repeatMode === 'off') {
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="fas fa-redo"></i>';
+                }
+                if (fullscreenBtn) {
+                    fullscreenBtn.classList.remove('active');
+                    fullscreenBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                }
+            } else if (repeatMode === 'all') {
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-redo"></i>';
+                }
+                if (fullscreenBtn) {
+                    fullscreenBtn.classList.add('active');
+                    fullscreenBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                }
+            } else {
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 8px; right: 8px;">1</span>';
+                }
+                if (fullscreenBtn) {
+                    fullscreenBtn.classList.add('active');
+                    fullscreenBtn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 12px; right: 12px;">1</span>';
+                }
+            }
+
+            showToast(`Repeat: ${repeatMode}`, 'info');
+        }
+
+        function togglePlayerExpand() {
+            if (event.target.closest('.player-mini-controls')) return;
+
+            playerExpanded = !playerExpanded;
+            const playerFull = document.getElementById('playerFull');
+            playerFull.classList.toggle('active');
+        }
+
+        function updatePlayerUI() {
+            if (currentSong) {
+                const imageUrl = currentSong.image?.[2]?.url || currentSong.image?.[1]?.url || 'https://via.placeholder.com/400';
+                const artistName = currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+
+                document.getElementById('playerImgMini').src = imageUrl;
+                document.getElementById('playerTitleMini').textContent = currentSong.name || 'Unknown Song';
+                document.getElementById('playerArtistMini').textContent = artistName;
+
+                updateFavoriteIcon();
+            }
+        }
+
+        function updateFullscreenPlayerUI() {
+            if (currentSong) {
+                const imageUrl = currentSong.image?.[2]?.url || currentSong.image?.[1]?.url || 'https://via.placeholder.com/400';
+                const artistName = currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+
+                document.getElementById('fullscreenImg').src = imageUrl;
+                document.getElementById('fullscreenTitle').textContent = currentSong.name || 'Unknown Song';
+                document.getElementById('fullscreenArtist').textContent = artistName;
+
+                const isFav = favorites.find(f => f.id === currentSong.id);
+                const fullscreenFavIcon = document.getElementById('fullscreenFavoriteIcon');
+                if (fullscreenFavIcon) {
+                    fullscreenFavIcon.className = isFav ? 'fas fa-heart' : 'far fa-heart';
+                    fullscreenFavIcon.style.color = isFav ? 'var(--accent-primary)' : '';
+                }
+
+                const shuffleBtn = document.getElementById('fullscreenShuffleBtn');
+                const repeatBtn = document.getElementById('fullscreenRepeatBtn');
+
+                if (isShuffleOn && shuffleBtn) shuffleBtn.classList.add('active');
+                else if (shuffleBtn) shuffleBtn.classList.remove('active');
+
+                if (repeatMode !== 'off' && repeatBtn) {
+                    repeatBtn.classList.add('active');
+                    if (repeatMode === 'one') {
+                        repeatBtn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 12px; right: 12px;">1</span>';
+                    } else {
+                        repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                    }
+                } else if (repeatBtn) {
+                    repeatBtn.classList.remove('active');
+                    repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                }
+            }
+        }
+
+        function toggleFullscreenQueue() {
+            if (window.innerWidth < 1024) {
+                const player = document.getElementById('fullscreenPlayer');
+                player.classList.toggle('queue-open');
+                updateFullscreenQueue();
+            }
+        }
+
+        function updateFullscreenQueue() {
+            const queueList = document.getElementById('fullscreenQueueList');
+
+            if (!queueList) return;
+
             if (!queue.length) {
                 queueList.innerHTML = '<div class="empty-state"><i class="fas fa-list"></i><p>Queue is empty</p></div>';
                 return;
             }
-            
+
             queueList.innerHTML = queue.map((song, index) => {
                 const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
                 const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-                
+
                 return `
                     <div class="queue-item ${index === currentIndex ? 'active' : ''}" onclick="playFromQueue(${index})">
                         <img src="${imageUrl}" class="queue-img" loading="lazy">
@@ -3234,69 +3769,11 @@
             }).join('');
         }
 
-        function playFromQueue(index) {
-            currentIndex = index;
-            playSongFromData(queue[index], index);
-        }
-
-        function removeFromQueue(index, event) {
-            event.stopPropagation();
-            queue.splice(index, 1);
-            if (currentIndex >= index && currentIndex > 0) currentIndex--;
-            updateQueueDisplay();
-            updateBadges();
-        }
-
-        function toggleShuffle() {
-            isShuffleOn = !isShuffleOn;
-            const btn = document.getElementById('shuffleBtn');
-            btn.classList.toggle('active');
-            showToast(isShuffleOn ? 'Shuffle on' : 'Shuffle off', 'info');
-        }
-
-        function toggleRepeat() {
-            const modes = ['off', 'all', 'one'];
-            const currentModeIndex = modes.indexOf(repeatMode);
-            repeatMode = modes[(currentModeIndex + 1) % modes.length];
-            
-            const btn = document.getElementById('repeatBtn');
-            if (repeatMode === 'off') {
-                btn.classList.remove('active');
-                btn.innerHTML = '<i class="fas fa-redo"></i>';
-            } else if (repeatMode === 'all') {
-                btn.classList.add('active');
-                btn.innerHTML = '<i class="fas fa-redo"></i>';
-            } else {
-                btn.classList.add('active');
-                btn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 8px; right: 8px;">1</span>';
-            }
-            
-            showToast(`Repeat: ${repeatMode}`, 'info');
-        }
-
-        function togglePlayerExpand() {
-            if (event.target.closest('.player-mini-controls')) return;
-            
-            playerExpanded = !playerExpanded;
-            const playerFull = document.getElementById('playerFull');
-            playerFull.classList.toggle('active');
-        }
-
-        function updatePlayerUI() {
-            if (currentSong) {
-                const imageUrl = currentSong.image?.[2]?.url || currentSong.image?.[1]?.url || 'https://via.placeholder.com/400';
-                const artistName = currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-                
-                document.getElementById('playerImgMini').src = imageUrl;
-                document.getElementById('playerTitleMini').textContent = currentSong.name || 'Unknown Song';
-                document.getElementById('playerArtistMini').textContent = artistName;
-                
-                document.getElementById('fullscreenImg').src = imageUrl;
-                document.getElementById('fullscreenTitle').textContent = currentSong.name || 'Unknown Song';
-                document.getElementById('fullscreenArtist').textContent = artistName;
-                
-                updateFavoriteIcon();
-            }
+        function seekSongFullscreen(event) {
+            if (!audio.duration) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            const percent = (event.clientX - rect.left) / rect.width;
+            audio.currentTime = percent * audio.duration;
         }
 
         function updateProgress() {
@@ -3304,6 +3781,14 @@
                 const percent = (audio.currentTime / audio.duration) * 100;
                 document.getElementById('progressFilled').style.width = percent + '%';
                 document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+
+                const fullscreenFilled = document.getElementById('fullscreenProgressFilled');
+                const fullscreenTime = document.getElementById('fullscreenCurrentTime');
+                const fullscreenDur = document.getElementById('fullscreenDuration');
+
+                if (fullscreenFilled) fullscreenFilled.style.width = percent + '%';
+                if (fullscreenTime) fullscreenTime.textContent = formatTime(audio.currentTime);
+                if (fullscreenDur) fullscreenDur.textContent = formatTime(audio.duration);
             }
         }
 
@@ -3344,9 +3829,9 @@
                 showToast('No song playing', 'warning');
                 return;
             }
-            
+
             const shareText = `🎵 ${currentSong.name} - ${currentSong.artists?.primary?.map(a => a.name).join(', ')}`;
-            
+
             if (navigator.share) {
                 navigator.share({
                     title: currentSong.name,
@@ -3387,6 +3872,7 @@
             updateFavoriteIcon();
             updateBadges();
             updateStats();
+            updateFullscreenPlayerUI();
         }
 
         function updateFavoriteIcon() {
@@ -3395,6 +3881,12 @@
             if (icon) {
                 icon.className = isFav ? 'fas fa-heart' : 'far fa-heart';
                 icon.style.color = isFav ? 'var(--accent-primary)' : '';
+            }
+
+            const fullscreenIcon = document.getElementById('fullscreenFavoriteIcon');
+            if (fullscreenIcon) {
+                fullscreenIcon.className = isFav ? 'fas fa-heart' : 'far fa-heart';
+                fullscreenIcon.style.color = isFav ? 'var(--accent-primary)' : '';
             }
         }
 
@@ -3405,16 +3897,16 @@
 
         function displayFavorites() {
             const list = document.getElementById('favoritesList');
-            
+
             if (!favorites.length) {
                 list.innerHTML = '<div class="empty-state"><i class="fas fa-heart"></i><p>No favorites yet</p></div>';
                 return;
             }
-            
+
             list.innerHTML = favorites.map(song => {
                 const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
                 const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-                
+
                 return `
                     <div class="queue-item" onclick="playSongFromFavorites('${song.id}')">
                         <img src="${imageUrl}" class="queue-img" loading="lazy">
@@ -3465,16 +3957,16 @@
 
         function displayRecentlyPlayed() {
             const list = document.getElementById('recentList');
-            
+
             if (!recentlyPlayed.length) {
                 list.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>No recent songs</p></div>';
                 return;
             }
-            
+
             list.innerHTML = recentlyPlayed.map(song => {
                 const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
                 const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-                
+
                 return `
                     <div class="queue-item" onclick="playSongFromRecent('${song.id}')">
                         <img src="${imageUrl}" class="queue-img" loading="lazy">
@@ -3503,7 +3995,7 @@
         function createPlaylist() {
             const name = document.getElementById('playlistName').value.trim();
             const desc = document.getElementById('playlistDesc').value.trim();
-            
+
             if (name) {
                 playlists.push({
                     id: Date.now().toString(),
@@ -3529,13 +4021,13 @@
                 showToast('No song selected', 'warning');
                 return;
             }
-            
+
             if (!playlists.length) {
                 showToast('Create a playlist first', 'info');
                 showCreatePlaylist();
                 return;
             }
-            
+
             const list = document.getElementById('addToPlaylistList');
             list.innerHTML = playlists.map(playlist => `
                 <div class="playlist-item" onclick="addToPlaylistAction('${playlist.id}')">
@@ -3546,14 +4038,14 @@
                     <i class="fas fa-chevron-right"></i>
                 </div>
             `).join('');
-            
+
             openModal('addToPlaylistModal');
         }
 
         function addToPlaylistAction(playlistId) {
             const playlist = playlists.find(p => p.id === playlistId);
             const songToAdd = currentPlaylistForAdd || currentSong;
-            
+
             if (playlist && songToAdd) {
                 if (!playlist.songs.find(s => s.id === songToAdd.id)) {
                     playlist.songs.push(songToAdd);
@@ -3570,15 +4062,15 @@
 
         function updateMyPlaylistsDisplay() {
             const grid = document.getElementById('myPlaylistsGrid');
-            
+
             if (!playlists.length) {
                 grid.innerHTML = '<div class="empty-state"><i class="fas fa-heart"></i><p>No playlists yet</p></div>';
                 return;
             }
-            
+
             grid.innerHTML = playlists.map(playlist => {
                 const firstSongImage = playlist.songs[0]?.image?.[1]?.url;
-                
+
                 return `
                 <div class="card">
                     <div class="card-img-container" style="${firstSongImage ? `background-image: url(${firstSongImage}); background-size: cover;` : 'background: var(--accent-gradient);'} display: flex; align-items: center; justify-content: center;">
@@ -3607,16 +4099,16 @@
         function viewUserPlaylist(playlist) {
             closeModal('playlistModal');
             document.getElementById('viewPlaylistTitle').textContent = playlist.name;
-            
+
             const container = document.getElementById('viewPlaylistSongs');
-            
+
             if (!playlist.songs.length) {
                 container.innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs in playlist</p></div>';
             } else {
                 container.innerHTML = playlist.songs.map((song, index) => {
                     const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
                     const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-                    
+
                     return `
                         <div class="queue-item" onclick="playSongFromMyPlaylist('${playlist.id}', ${index})">
                             <img src="${imageUrl}" class="queue-img" loading="lazy">
@@ -3631,7 +4123,7 @@
                     `;
                 }).join('');
             }
-            
+
             openModal('viewPlaylistModal');
         }
 
@@ -3648,7 +4140,7 @@
                     hasMore: false,
                     isLoading: false
                 };
-                
+
                 queue = [...playlist.songs];
                 currentIndex = songIndex;
                 playSongFromData(playlist.songs[songIndex], songIndex);
@@ -3661,7 +4153,7 @@
                 showToast('Playlist is empty', 'warning');
                 return;
             }
-            
+
             currentContext = {
                 type: 'myplaylist',
                 id: playlist.id,
@@ -3672,7 +4164,7 @@
                 hasMore: false,
                 isLoading: false
             };
-            
+
             queue = [...playlist.songs];
             currentIndex = 0;
             playSongFromData(queue[0], 0);
@@ -3736,23 +4228,29 @@
         function openFullscreenPlayer() {
             if (!currentSong) return;
             updatePlayerUI();
-            document.getElementById('fullscreenPlayer').classList.add('active');
+            updateFullscreenPlayerUI();
+            updateFullscreenQueue();
+
+            const player = document.getElementById('fullscreenPlayer');
+            player.classList.add('active');
+
+            if (window.innerWidth >= 1024) {
+                player.classList.add('queue-open');
+            }
+
             document.body.style.overflow = 'hidden';
         }
 
         function closeFullscreenPlayer() {
             document.getElementById('fullscreenPlayer').classList.remove('active');
+            document.getElementById('fullscreenPlayer').classList.remove('queue-open');
             document.body.style.overflow = '';
-        }
-
-        function openPlayerOptions() {
-            openAddToPlaylist();
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-            
+
             document.querySelectorAll('.tab').forEach(tab => {
                 const tabText = tab.textContent.toLowerCase().trim();
                 const targetText = tabName.toLowerCase().replace('-', ' ').trim();
@@ -3760,7 +4258,7 @@
                     tab.classList.add('active');
                 }
             });
-            
+
             document.getElementById(tabName).classList.add('active');
 
             if (tabName === 'trending-playlists' && !document.getElementById('trendingPlaylistsGrid').innerHTML) {
@@ -3785,36 +4283,70 @@
         }
 
         function updateBadges() {
+            // Main badges
             const queueBadge = document.getElementById('queueBadge');
-            const favBadge = document.getElementById('favBadge');
-            const recentBadge = document.getElementById('recentBadge');
-            
+            const sidebarQueueBadge = document.getElementById('sidebarQueueBadge');
+
             if (queue.length > 0) {
-                queueBadge.textContent = queue.length;
-                queueBadge.style.display = 'block';
+                if (queueBadge) {
+                    queueBadge.textContent = queue.length;
+                    queueBadge.style.display = 'block';
+                }
+                if (sidebarQueueBadge) {
+                    sidebarQueueBadge.textContent = queue.length;
+                    sidebarQueueBadge.style.display = 'block';
+                }
             } else {
-                queueBadge.style.display = 'none';
+                if (queueBadge) queueBadge.style.display = 'none';
+                if (sidebarQueueBadge) sidebarQueueBadge.style.display = 'none';
             }
-            
-            if (favorites.length > 0) {
-                favBadge.textContent = favorites.length;
-                favBadge.style.display = 'block';
-            } else {
-                favBadge.style.display = 'none';
+
+            // Favorites badges
+            const sidebarFavBadge = document.getElementById('sidebarFavBadge');
+            if (favorites.length > 0 && sidebarFavBadge) {
+                sidebarFavBadge.textContent = favorites.length;
+                sidebarFavBadge.style.display = 'block';
+            } else if (sidebarFavBadge) {
+                sidebarFavBadge.style.display = 'none';
             }
-            
-            if (recentlyPlayed.length > 0) {
-                recentBadge.textContent = recentlyPlayed.length;
-                recentBadge.style.display = 'block';
-            } else {
-                recentBadge.style.display = 'none';
+
+            // Recent badges
+            const sidebarRecentBadge = document.getElementById('sidebarRecentBadge');
+            if (recentlyPlayed.length > 0 && sidebarRecentBadge) {
+                sidebarRecentBadge.textContent = recentlyPlayed.length;
+                sidebarRecentBadge.style.display = 'block';
+            } else if (sidebarRecentBadge) {
+                sidebarRecentBadge.style.display = 'none';
+            }
+
+            // Playlist badge
+            const sidebarPlaylistBadge = document.getElementById('sidebarPlaylistBadge');
+            if (playlists.length > 0 && sidebarPlaylistBadge) {
+                sidebarPlaylistBadge.textContent = playlists.length;
+                sidebarPlaylistBadge.style.display = 'block';
+            } else if (sidebarPlaylistBadge) {
+                sidebarPlaylistBadge.style.display = 'none';
             }
         }
 
         function updateStats() {
-            document.getElementById('statSongs').textContent = recentlyPlayed.length;
-            document.getElementById('statPlaylists').textContent = playlists.length;
-            document.getElementById('statFavorites').textContent = favorites.length;
+            // Main stats
+            const statSongs = document.getElementById('statSongs');
+            const statPlaylists = document.getElementById('statPlaylists');
+            const statFavorites = document.getElementById('statFavorites');
+
+            if (statSongs) statSongs.textContent = recentlyPlayed.length;
+            if (statPlaylists) statPlaylists.textContent = playlists.length;
+            if (statFavorites) statFavorites.textContent = favorites.length;
+
+            // Sidebar stats
+            const sidebarStatSongs = document.getElementById('sidebarStatSongs');
+            const sidebarStatPlaylists = document.getElementById('sidebarStatPlaylists');
+            const sidebarStatFavorites = document.getElementById('sidebarStatFavorites');
+
+            if (sidebarStatSongs) sidebarStatSongs.textContent = recentlyPlayed.length;
+            if (sidebarStatPlaylists) sidebarStatPlaylists.textContent = playlists.length;
+            if (sidebarStatFavorites) sidebarStatFavorites.textContent = favorites.length;
         }
 
         function formatTime(seconds) {
@@ -3836,7 +4368,7 @@
                 warning: 'fa-exclamation-triangle',
                 info: 'fa-info-circle'
             };
-            
+
             const toast = document.createElement('div');
             toast.className = 'toast';
             toast.innerHTML = `<i class="fas ${icons[type]}"></i> ${message}`;
@@ -3858,7 +4390,14 @@
 
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'INPUT') return;
-            
+
+            if (e.key === 'Escape') {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('active')) {
+                    closeSidebar();
+                }
+            }
+
             switch(e.key) {
                 case ' ':
                     e.preventDefault();
