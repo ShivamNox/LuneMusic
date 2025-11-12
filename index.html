@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0">
     <title>LuneMusic - Music Player</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         /* ========================================
            RESET & BASE STYLES
@@ -145,6 +146,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            flex-shrink: 0;
         }
 
         .header-right {
@@ -152,6 +154,7 @@
             align-items: center;
             gap: 0.5rem;
             margin-left: auto;
+            flex-shrink: 0;
         }
 
         @media (max-width: 767px) {
@@ -198,8 +201,18 @@
             50% { transform: scale(1.1); }
         }
 
+        @media (max-width: 767px) {
+            .logo {
+                font-size: 1rem;
+            }
+
+            .logo i {
+                font-size: 1.2rem;
+            }
+        }
+
         /* ========================================
-           BUTTONS
+           BUTTONS - HEADER
         ======================================== */
         .menu-toggle,
         .theme-toggle,
@@ -217,6 +230,16 @@
             justify-content: center;
             transition: all var(--transition-normal);
             flex-shrink: 0;
+        }
+
+        @media (max-width: 767px) {
+            .menu-toggle,
+            .theme-toggle,
+            .search-icon-mobile {
+                width: 36px;
+                height: 36px;
+                font-size: 0.95rem;
+            }
         }
 
         .menu-toggle:active,
@@ -242,10 +265,10 @@
         }
 
         /* ========================================
-           SEARCH - DESKTOP
+           DESKTOP SEARCH - ✅ HIDDEN ON MOBILE
         ======================================== */
         .desktop-search {
-            display: none;
+            display: none !important;
         }
 
         @media (min-width: 768px) {
@@ -255,11 +278,24 @@
                 max-width: 600px;
                 margin: 0 auto;
             }
+        }
+
+        /* ========================================
+           MOBILE SEARCH ICON - ✅ HIDDEN ON DESKTOP
+        ======================================== */
+        .search-icon-mobile {
+            display: flex !important;
+        }
+
+        @media (min-width: 768px) {
             .search-icon-mobile {
                 display: none !important;
             }
         }
 
+        /* ========================================
+           SEARCH COMPONENTS
+        ======================================== */
         .search-container {
             display: flex;
             gap: 0.5rem;
@@ -1092,6 +1128,133 @@
         }
 
         /* ========================================
+           YOUTUBE SECTION - ✅ FIXED VISIBILITY
+        ======================================== */
+        #youtubeResultsSection {
+            display: none !important;
+        }
+
+        #youtubeResultsSection.show-youtube {
+            display: block !important;
+        }
+
+        /* Mobile: Control visibility */
+        @media (max-width: 1023px) {
+            #youtubeResultsSection.show-youtube.mobile-hidden {
+                display: none !important;
+            }
+
+            #saavnResultsSection.mobile-hidden {
+                display: none !important;
+            }
+
+            #youtubeResultsSection.show-youtube:not(.mobile-hidden) {
+                display: block !important;
+            }
+
+            #saavnResultsSection:not(.mobile-hidden) {
+                display: block !important;
+            }
+        }
+
+        /* Desktop: Side by side */
+        @media (min-width: 1024px) {
+            .search-results-container.has-youtube {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+
+            #youtubeResultsSection.show-youtube,
+            #saavnResultsSection {
+                display: block !important;
+            }
+
+            .mobile-hidden {
+                display: block !important;
+            }
+        }
+
+        /* ========================================
+           YOUTUBE TOGGLE BUTTON - ✅ FIXED
+        ======================================== */
+        .youtube-toggle-btn {
+            display: none !important;
+        }
+
+        @media (max-width: 1023px) {
+            .youtube-toggle-btn.show-toggle {
+                display: flex !important;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.4rem 0.8rem;
+                border: 1px solid var(--border-color);
+                border-radius: 15px;
+                background: transparent;
+                color: var(--text-secondary);
+                cursor: pointer;
+                font-size: 0.75rem;
+                font-weight: 600;
+                transition: all var(--transition-normal);
+            }
+
+            .youtube-toggle-btn.active {
+                background: var(--accent-gradient);
+                color: white;
+                border-color: transparent;
+            }
+        }
+
+        /* ========================================
+           SEARCH RESULTS LAYOUT
+        ======================================== */
+        .search-results-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .saavn-results-section,
+        .youtube-results-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .results-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .results-section-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .results-section-header h3 i {
+            color: var(--accent-primary);
+        }
+
+        .results-count {
+            background: var(--accent-gradient);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 12px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        /* ========================================
            MUSIC PLAYER - MINI
         ======================================== */
         .music-player {
@@ -1184,6 +1347,11 @@
             60%, 100% { content: '...'; }
         }
 
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
         .player-mini-controls {
             display: flex;
             align-items: center;
@@ -1216,7 +1384,7 @@
         }
 
         /* ========================================
-           MUSIC PLAYER - FULL
+           PLAYER FULL
         ======================================== */
         .player-full {
             max-height: 0;
@@ -1267,7 +1435,6 @@
             background: var(--accent-gradient);
             border-radius: 3px;
             transition: width 0.1s linear;
-            position: relative;
         }
 
         .player-controls-full {
@@ -1870,11 +2037,6 @@
             margin: 0 auto 1rem;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         /* ========================================
            TOAST NOTIFICATIONS
         ======================================== */
@@ -2078,159 +2240,8 @@
             animation: shimmer 1.5s infinite;
             animation-delay: 0.1s;
         }
-
-        /* ========================================
-           YOUTUBE SECTION VISIBILITY CONTROL
-        ======================================== */
-        #youtubeResultsSection {
-            display: none;
-        }
-
-        #youtubeResultsSection.show-youtube {
-            display: block;
-        }
-
-        #youtubeToggleBtn {
-            position: fixed;
-            bottom: calc(var(--player-height) + 1rem);
-            right: 1rem;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border-color);
-            padding: 0.75rem 1.25rem;
-            border-radius: var(--radius-lg);
-            display: none;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            z-index: 999;
-            box-shadow: var(--shadow-lg);
-            transition: all var(--transition-normal);
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        #youtubeToggleBtn.show-toggle {
-            display: none;
-        }
-
-        @media (max-width: 1023px) {
-            #youtubeToggleBtn.show-toggle {
-                display: flex;
-            }
-
-            #youtubeResultsSection.mobile-hidden {
-                display: none !important;
-            }
-
-            #saavnResultsSection.mobile-hidden {
-                display: none !important;
-            }
-
-            #youtubeToggleBtn {
-                bottom: calc(var(--player-height-mobile) + 1rem);
-            }
-        }
-
-        #youtubeToggleBtn.active {
-            background: var(--accent-gradient);
-            color: white;
-            border-color: var(--accent-primary);
-        }
-
-        @media (hover: hover) {
-            #youtubeToggleBtn:hover {
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-xl);
-            }
-        }
-
-        /* ========================================
-           SEARCH RESULTS LAYOUT
-        ======================================== */
-        .search-results-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-        }
-
-        @media (min-width: 1024px) {
-            .search-results-container.has-youtube {
-                grid-template-columns: 1fr 1fr;
-                gap: 2rem;
-            }
-        }
-
-        .saavn-results-section,
-        .youtube-results-section {
-            background: var(--bg-secondary);
-            border-radius: var(--radius-lg);
-            padding: 1rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .section-header-inline {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .section-header-inline h2 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .section-header-inline h2 i {
-            color: var(--accent-primary);
-        }
-
-        .results-count {
-            background: var(--accent-gradient);
-            color: white;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 0.25rem 0.65rem;
-            border-radius: 12px;
-            min-width: 24px;
-            text-align: center;
-        }
-
-        #searchResultsInfo {
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            border-left: 4px solid var(--accent-primary);
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        #searchResultsInfo i {
-            margin-right: 0.25rem;
-            color: var(--accent-primary);
-        }
-
-        /* ========================================
-           RESPONSIVE ADJUSTMENTS
-        ======================================== */
-        @media (max-width: 768px) {
-            .section-header-inline h2 {
-                font-size: 1rem;
-            }
-            #searchResultsInfo {
-                font-size: 0.8rem;
-                padding: 0.625rem;
-            }
-        }
     </style>
+    
 </head>
 <body>
     <!-- Header -->
