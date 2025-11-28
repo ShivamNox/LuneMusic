@@ -1,144 +1,146 @@
-Here’s a `README.md` you can drop into the repo 👇
+# 🌙 **LuneMusic**
 
-````markdown
-# LuneMusic 🎧  
+### A modern, aesthetic & minimal music player UI for the web.
 
-LuneMusic is a clean, modern web-based music player UI inspired by popular streaming apps.  
-It focuses on the **user interface and experience** – giving you sections like Trending, Playlists, Albums, Queue, and Now Playing in a single-page layout.
-
-🔗 **Live Demo**: https://lunemusic.vercel.app  
-
----
-
-## Features
-
-### 🎵 Music Library & Stats
-- Library overview with:
-  - **Recently Played**
-  - **Favorites**
-  - **My Playlists**
-- Quick stats for:
-  - Total **Songs**
-  - Total **Playlists**
-  - Total **Favorites**
-
-### 🔍 Search Interface
-- Search bar designed to search across:
-  - **Songs**
-  - **Albums**
-  - **Artists**
-  - **Playlists**
-- Separate zones for:
-  - **YouTube Results**
-  - **Saavn Results**
-- “Load More” section prepared for future integration with real APIs.
-
-### 📊 Browse Sections
-Home page is divided into rich discovery blocks:
-- **Trending Now**
-- **Popular Albums**
-- **Editorial Picks**
-- **Top Charts**
-- **Made For You**
-- **Trending Playlists** with filters:
-  - All / Hindi / English / Punjabi / Romantic / Party
-- **Trending Albums** with filters:
-  - All / 2024 / 2023 / Bollywood
-
-### 📂 Playlists & Queue
-- **Play Queue** section with a “Clear” option.
-- **My Playlists** area with:
-  - “Create New Playlist”
-  - **Create Playlist** form (name + optional description).
-- Placeholder **Add to Playlist** and **Playlist** sections for future enhancements.
-
-### 🎧 Now Playing Panel
-- **Now Playing** card with:
-  - Album art
-  - Song title
-  - Artist name
-  - Progress display (current time & total duration)
-- **Up Next** section prepared for showing upcoming songs.
-- Default “No song playing – Select a song to play” state when idle.
-
-### ⚙️ Settings
-- **Audio Quality options**:
-  - Low (96 kbps)
-  - Medium (160 kbps)
-  - High (320 kbps)
-- **Playback Speed options**:
-  - 0.5x, 0.75x, Normal, 1.25x, 1.5x, 2x
-- **Clear All Data** placeholder for future persistence handling.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Frontend%20UI%20Only-blueviolet?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Built%20With-HTML%20%7C%20CSS-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Design-Clean%20%26%20Modern-pink?style=for-the-badge" />
+</p>
 
 ---
 
-## Tech Stack
+## 🎧 **About LuneMusic**
 
-- **HTML** – Single-page layout (`index.html`)
-- **CSS (inline / internal)** – For layout, sections, and UI structuring
-- No build tools, no frameworks – just a simple, deployable static page.
+**LuneMusic** is a beautifully crafted music-streaming UI inspired by modern apps like Spotify, Apple Music & YouTube Music.
+It focuses on **clean layout**, **smooth sections**, and **future-ready components** such as search, playlists, queues, categories, and more.
+
+This project is currently **UI-Only** and built entirely with **HTML + CSS**.
 
 ---
 
-## Project Structure
+## 🌟 **Features**
 
-```text
+### 🔍 **Smart Music Search**
+
+* Search among **Songs / Albums / Artists / Playlists**
+* Dedicated areas for:
+
+  * **YouTube Search Results**
+  * **Saavn Search Results**
+* “Load More” placeholder for future API integration
+
+---
+
+### 🎵 **Music Discovery**
+
+* **Trending Now**
+* **Popular Albums**
+* **Editorial Picks**
+* **Top Charts**
+* **Made For You**
+* **Trending Playlists** (with filters: All / Hindi / English / Punjabi / Romantic / Party)
+* **Trending Albums** (filters: All / 2024 / 2023 / Bollywood)
+
+---
+
+### 📂 **Playlist System**
+
+* View **My Playlists**
+* Create **New Playlist**
+* Add songs to playlists (future feature)
+* Playlist modal with title & description
+
+---
+
+### 📊 **Queue & Playback**
+
+* Play Queue with "Clear" option
+* Sleek **Now Playing** panel:
+
+  * Album art
+  * Song & Artist info
+  * Progress details
+* “Up Next” section
+* "No song playing" state
+
+---
+
+### ⚙️ **Player Settings**
+
+* Audio Quality: 96 / 160 / 320 kbps
+* Playback Speed: 0.5x → 2x
+* Clear All Data (future feature)
+
+---
+
+## 🛠️ **Tech Stack**
+
+| Technology            | Purpose                                     |
+| --------------------- | ------------------------------------------- |
+| **HTML5**             | UI structure                                |
+| **CSS3**              | Styling, layout, responsive sections        |
+| *(No JavaScript yet)* | Reserved for future audio + API integration |
+
+---
+
+## 📁 Project Structure
+
+```
 LuneMusic/
-├── index.html   # Main UI for the music player
-└── README.md    # Project documentation
-````
+│── index.html       # Main UI
+│── README.md        # Documentation
+└── (more coming soon)
+```
 
 ---
 
-## Getting Started
+## 🚀 **Getting Started**
 
-You can run LuneMusic locally in seconds:
-
-### 1. Clone the repository
+Clone the repository:
 
 ```bash
 git clone https://github.com/ShivamNox/LuneMusic.git
 cd LuneMusic
 ```
 
-### 2. Open in a browser
+Open the interface:
 
-Just open `index.html` in any modern browser:
-
-* Double-click `index.html`, **or**
-* Right-click → “Open With” → choose your browser, **or**
-* Use a simple static server:
+* Just open **index.html** directly
+  **OR**
+* Run a small local server:
 
 ```bash
-# Using Python 3
-python -m http.server 8080
+python -m http.server 5000
 ```
 
-Then open: [http://localhost:8080](http://localhost:8080) in your browser and navigate to `index.html`.
+Then visit:
+👉 [http://localhost:5000](http://localhost:5000)
 
 ---
 
-## Current Status & Future Plans
+## 📌 **Roadmap**
 
-This project is currently focused on the **frontend UI** – a polished layout for a music streaming dashboard.
+✔ Modern music dashboard
+✔ Search + Categories UI
+✔ Playlist creation UI
+✔ Now Playing panel
 
-Possible future improvements:
+### 🔮 Coming Soon
 
-* 🔗 Integrate real APIs (YouTube, Saavn, Spotify, etc.)
-* 💾 Persist playlists, favorites, and recently played using localStorage or a backend.
-* ▶️ Actual audio playback with HTML5 `<audio>` and controls.
-* 👤 User accounts / authentication.
-* 🎨 Dark mode & more themes.
+* 🎶 Real audio playback
+* 🔗 YouTube / Spotify / JioSaavn API integration
+* 🔑 User Login / Profiles
+* 🌙 Dark mode
+* 📱 Mobile-optimized version
+* 💾 Save playlists & history in localStorage / backend
 
 ---
 
-## Author
+## 👨‍💻 **Author**
 
 **Shivam Kumar (ShivamNox)**
+💻 GitHub: [https://github.com/ShivamNox](https://github.com/ShivamNox)
 
-* GitHub: [@ShivamNox](https://github.com/ShivamNox)
-
----
-
-> If you have ideas or suggestions, feel free to open an issue or fork the repo and experiment!
+> ⭐ *Found this project cool? Consider giving it a star on GitHub!*
 
