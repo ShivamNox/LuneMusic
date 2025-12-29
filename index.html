@@ -2290,6 +2290,41 @@
             animation: spin 0.8s linear infinite;
             z-index: 2;
         }
+
+        /* ========================================
+   COPYRIGHT SECTION
+======================================== */
+.copyright-section {
+    text-align: center;
+    padding: 2rem 1rem;
+    margin-top: 2rem;
+}
+
+.copyright-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.copyright-text .heart-icon {
+    color: var(--accent-primary);
+    font-size: 0.9rem;
+}
+
+.copyright-text a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--transition-fast);
+}
+
+.copyright-text a:hover {
+    color: var(--accent-primary);
+}
     </style>
 </head>
 <body>
@@ -3003,6 +3038,14 @@
         </div>
 
         <audio id="audioPlayer"></audio>
+
+    <!-- Copyright Section -->
+<footer class="copyright-section">
+    <p class="copyright-text">
+        Made with <i class="fas fa-heart heart-icon"></i> by 
+        <a href="https://github.com/shivamnox" target="_blank" rel="noopener noreferrer">ShivamNox</a>
+    </p>
+</footer>
 
     <script>
         const API_BASE = 'https://saavn.sumit.co';
