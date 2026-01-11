@@ -1,70 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Downloading...</title>
+    <title>Downloading Music...</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            min-height: 100vh;
         }
         .container {
             text-align: center;
-            padding: 2rem;
+            padding: 3rem;
             background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 400px;
         }
         .spinner {
             border: 4px solid rgba(255,255,255,0.3);
             border-top: 4px solid white;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
+            margin: 0 auto 2rem;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        h2 { margin: 0 0 1rem; font-size: 1.5rem; }
+        p { margin: 0.5rem 0; opacity: 0.9; }
+        .filename {
+            background: rgba(255,255,255,0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            word-break: break-word;
+        }
+        .error { color: #ff6b6b; }
+        .success { color: #51cf66; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="spinner"></div>
-        <h2>🎵 Downloading...</h2>
-        <p id="filename">Preparing your music...</p>
+        <h2>🎵 Downloading Music...</h2>
+        <div class="filename" id="filename">Preparing download...</div>
+        <p id="status">Please wait...</p>
     </div>
 
     <script>
-        // Get URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileUrl = urlParams.get('url');
-        const fileName = urlParams.get('name') || 'music.mp3';
-
-        // Display filename
-        document.getElementById('filename').textContent = fileName;
-
-        // Auto download function
         async function downloadFile() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const telegramUrl = urlParams.get('url');
+            const fileName = urlParams.get('name') || 'music.mp3';
+
+            // Update UI
+            document.getElementById('filename').textContent = fileName;
+
+            if (!telegramUrl) {
+                showError('No download URL provided');
+                return;
+            }
+
             try {
-                if (!fileUrl) {
-                    throw new Error('No download URL provided');
-                }
+                // Use CORS proxy to bypass Telegram CORS restriction
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(telegramUrl)}`;
+                
+                document.getElementById('status').textContent = 'Fetching file...';
 
-                // Fetch the file
-                const response = await fetch(fileUrl);
+                const response = await fetch(proxyUrl);
+                
                 if (!response.ok) {
-                    throw new Error('Download failed');
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                // Get blob
+                document.getElementById('status').textContent = 'Processing download...';
+
                 const blob = await response.blob();
 
                 // Create download link
@@ -80,23 +100,33 @@
                 // Clean up
                 URL.revokeObjectURL(link.href);
 
-                // Update UI
-                document.querySelector('.container').innerHTML = `
-                    <h2>✅ Download Complete!</h2>
-                    <p>${fileName}</p>
-                    <p>Check your downloads folder</p>
-                `;
+                // Success UI
+                showSuccess(fileName);
 
             } catch (error) {
                 console.error('Download error:', error);
-                document.querySelector('.container').innerHTML = `
-                    <h2>❌ Download Failed</h2>
-                    <p>Please try again later</p>
-                `;
+                showError('Download failed. Please try again.');
             }
         }
 
-        // Start download when page loads
+        function showSuccess(fileName) {
+            document.querySelector('.container').innerHTML = `
+                <h2 class="success">✅ Download Complete!</h2>
+                <div class="filename">${fileName}</div>
+                <p>File saved to your downloads folder</p>
+                <p style="margin-top: 2rem; opacity: 0.7;">You can close this tab now</p>
+            `;
+        }
+
+        function showError(message) {
+            document.querySelector('.container').innerHTML = `
+                <h2 class="error">❌ Download Failed</h2>
+                <p>${message}</p>
+                <p style="margin-top: 2rem; opacity: 0.7;">Please try again later</p>
+            `;
+        }
+
+        // Auto start download
         window.onload = downloadFile;
     </script>
 </body>
