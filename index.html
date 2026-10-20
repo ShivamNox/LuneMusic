@@ -3405,19 +3405,19 @@
             let endpoint = '';
             switch(type) {
                 case 'songs': 
-                    endpoint = `/api/search/songs?query=${encodeURIComponent(query)}&page=0&limit=20`; 
+                    endpoint = `/search/songs?query=${encodeURIComponent(query)}&page=0&limit=20`; 
                     break;
                 case 'albums': 
-                    endpoint = `/api/search/albums?query=${encodeURIComponent(query)}&page=0&limit=20`; 
+                    endpoint = `/search/albums?query=${encodeURIComponent(query)}&page=0&limit=20`; 
                     break;
                 case 'artists': 
-                    endpoint = `/api/search/artists?query=${encodeURIComponent(query)}&page=0&limit=20`; 
+                    endpoint = `/search/artists?query=${encodeURIComponent(query)}&page=0&limit=20`; 
                     break;
                 case 'playlists': 
-                    endpoint = `/api/search/playlists?query=${encodeURIComponent(query)}&page=0&limit=20`; 
+                    endpoint = `/search/playlists?query=${encodeURIComponent(query)}&page=0&limit=20`; 
                     break;
                 default: 
-                    endpoint = `/api/search?query=${encodeURIComponent(query)}&page=0&limit=20`;
+                    endpoint = `/search?query=${encodeURIComponent(query)}&page=0&limit=20`;
             }
 
             const promises = [fetchAPI(endpoint)];
@@ -3919,7 +3919,7 @@
 
         async function loadTrendingNow() {
             try {
-                const data = await fetchAPI('/api/search/playlists?query=trending viral&page=0&limit=6');
+                const data = await fetchAPI('/search/playlists?query=trending viral&page=0&limit=6');
                 if (data?.data?.results?.length) {
                     const grid = document.getElementById('trendingNow');
                     grid.className = 'grid';
@@ -3936,7 +3936,7 @@
 
         async function loadPopularAlbums() {
             try {
-                const data = await fetchAPI('/api/search/albums?query=latest bollywood 2024&page=0&limit=6');
+                const data = await fetchAPI('/search/albums?query=latest bollywood 2024&page=0&limit=6');
                 if (data?.data?.results?.length) {
                     const grid = document.getElementById('popularAlbums');
                     grid.className = 'grid';
@@ -3953,7 +3953,7 @@
 
         async function loadEditorialPicks() {
             try {
-                const data = await fetchAPI('/api/search/albums?query=fresh music 2024&page=0&limit=6');
+                const data = await fetchAPI('/search/albums?query=fresh music 2024&page=0&limit=6');
                 if (data?.data?.results?.length) {
                     const grid = document.getElementById('editorialPicks');
                     grid.className = 'grid';
@@ -3971,10 +3971,10 @@
         async function loadTopCharts() {
             try {
                 const [data1, data2, data3, data4] = await Promise.all([
-                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs Hindi&page=0&limit=2'),
-                    fetchAPI('/api/search/playlists?query=Most Streamed Love Songs English&page=0&limit=2'),
-                    fetchAPI('/api/search/playlists?query=Trending Today&page=0&limit=2'),
-                    fetchAPI('/api/search/playlists?query=Most Searched Songs Hindi&page=0&limit=2')
+                    fetchAPI('/search/playlists?query=Most Streamed Love Songs Hindi&page=0&limit=2'),
+                    fetchAPI('/search/playlists?query=Most Streamed Love Songs English&page=0&limit=2'),
+                    fetchAPI('/search/playlists?query=Trending Today&page=0&limit=2'),
+                    fetchAPI('/search/playlists?query=Most Searched Songs Hindi&page=0&limit=2')
                 ]);
 
                 let combinedResults = [];
@@ -4012,7 +4012,7 @@
 
         async function loadMadeForYou() {
             try {
-                const data = await fetchAPI('/api/search/playlists?query=romantic love hindi&page=0&limit=6');
+                const data = await fetchAPI('/search/playlists?query=romantic love hindi&page=0&limit=6');
                 if (data?.data?.results?.length) {
                     const grid = document.getElementById('madeForYou');
                     grid.className = 'grid';
@@ -4049,7 +4049,7 @@
 
         async function loadTrendingAlbums() {
             showLoading('trendingAlbumsGrid');
-            const data = await fetchAPI('/api/search/albums?query=2024&page=0&limit=20');
+            const data = await fetchAPI('/search/albums?query=2024&page=0&limit=20');
             if (data?.data?.results) {
                 displayAlbums(data.data.results, 'trendingAlbumsGrid');
             }
@@ -4070,7 +4070,7 @@
                 event.target.classList.add('active');
                 showLoading('trendingPlaylistsGrid');
                 const query = category === 'all' ? 'trending' : category;
-                const data = await fetchAPI(`/api/search/playlists?query=${query}&page=0&limit=20`);
+                const data = await fetchAPI(`/search/playlists?query=${query}&page=0&limit=20`);
                 if (data?.data?.results) {
                     displayPlaylists(data.data.results, 'trendingPlaylistsGrid');
                 }
@@ -4084,7 +4084,7 @@
                 event.target.classList.add('active');
                 showLoading('trendingAlbumsGrid');
                 const query = category === 'all' ? '2024' : category;
-                const data = await fetchAPI(`/api/search/albums?query=${query}&page=0&limit=20`);
+                const data = await fetchAPI(`/search/albums?query=${query}&page=0&limit=20`);
                 if (data?.data?.results) {
                     displayAlbums(data.data.results, 'trendingAlbumsGrid');
                 }
@@ -4114,19 +4114,19 @@
 
                 switch(searchType) {
                     case 'songs': 
-                        endpoint = `/api/search/songs?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
+                        endpoint = `/search/songs?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
                         break;
                     case 'albums': 
-                        endpoint = `/api/search/albums?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
+                        endpoint = `/search/albums?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
                         break;
                     case 'artists': 
-                        endpoint = `/api/search/artists?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
+                        endpoint = `/search/artists?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
                         break;
                     case 'playlists': 
-                        endpoint = `/api/search/playlists?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
+                        endpoint = `/search/playlists?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
                         break;
                     default: 
-                        endpoint = `/api/search?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`;
+                        endpoint = `/search?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`;
                 }
 
                 data = await fetchAPI(endpoint);
@@ -4175,7 +4175,7 @@
                 }
 
             } else if (currentContext.type === 'playlist') {
-                endpoint = `/api/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
+                endpoint = `/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
                 data = await fetchAPI(endpoint);
 
                 if (data?.data?.songs && data.data.songs.length > 0) {
@@ -4218,7 +4218,7 @@
                 }
 
             } else if (currentContext.type === 'artist') {
-                endpoint = `/api/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
+                endpoint = `/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
                 data = await fetchAPI(endpoint);
 
                 if (data?.data?.songs && data.data.songs.length > 0) {
@@ -4543,7 +4543,7 @@
                     isLoading: false
                 };
 
-                const data = await fetchAPI(`/api/albums?id=${albumId}`);
+                const data = await fetchAPI(`/albums?id=${albumId}`);
                 if (data?.data?.songs) {
                     currentContext.songs = data.data.songs;
                     currentContext.totalSongs = data.data.songs.length;
@@ -4577,7 +4577,7 @@
                 useBackupAPI: false
             };
 
-            const endpoint = `/api/playlists?id=${playlistId}&page=0&limit=20`;
+            const endpoint = `/playlists?id=${playlistId}&page=0&limit=20`;
             const data = await fetchAPI(endpoint);
 
             if (data?.data?.songs && data.data.songs.length > 0) {
@@ -4666,7 +4666,7 @@
                 loadedIds: new Set()
             };
 
-            const endpoint = `/api/artists/${artistId}/songs?page=0&sortBy=popularity&sortOrder=desc`;
+            const endpoint = `/artists/${artistId}/songs?page=0&sortBy=popularity&sortOrder=desc`;
             const data = await fetchAPI(endpoint);
 
             if (data?.data?.songs && data.data.songs.length > 0) {
