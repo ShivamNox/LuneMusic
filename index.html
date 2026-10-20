@@ -3049,6 +3049,9 @@
 
     <script>
         const API_BASE = 'https://jiosaavn-api-codyandersan.vercel.app';
+        const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#2a2a2a"/><text x="50%" y="54%" font-size="64" text-anchor="middle" fill="#777">&#9835;</text></svg>'
+        );
 
         let currentSong = null;
         let queue = [];
@@ -3091,12 +3094,136 @@
         let hasMoreYouTubeResults = false;
         let isYouTubeView = false;
 
+        // ========== API RESPONSE NORMALIZATION ==========
+        // New API format:
+        //  image: [{quality, link}]            -> [{quality, url}]
+        //  downloadUrl: [{quality, link}]      -> [{quality, url}]
+        //  primaryArtists / primaryArtistsId   -> artists.primary [{id, name}]
+        //  featuredArtists / featuredArtistsId -> artists.featured [{id, name}]
+        //  duration: "209" (string)            -> 209 (number)
+        function normalizeMediaList(list) {
+            if (!Array.isArray(list)) {
+                if (typeof list === 'string' && list) return [{ quality: '500x500', url: list }];
+                return [];
+            }
+            return list
+                .map(entry => {
+                    if (typeof entry === 'string') return { quality: '', url: entry };
+                    return {
+                        quality: entry.quality || '',
+                        url: entry.link || entry.url || ''
+                    };
+                })
+                .filter(entry => entry.url);
+        }
+
+        function splitArtists(names, ids) {
+            if (!names) return [];
+            if (Array.isArray(names)) {
+                return names
+                    .map(a => (typeof a === 'string' ? { id: '', name: a } : { id: a.id || '', name: a.name || '' }))
+                    .filter(a => a.name);
+            }
+            const nameList = String(names).split(',').map(n => n.trim()).filter(Boolean);
+            const idList = ids ? String(ids).split(',').map(i => i.trim()) : [];
+            return nameList.map((name, i) => ({ id: idList[i] || '', name }));
+        }
+
+        function normalizeItem(item) {
+            if (!item || typeof item !== 'object') return item;
+
+            item.image = normalizeMediaList(item.image);
+            item.downloadUrl = normalizeMediaList(item.downloadUrl);
+
+            // Artists: primary and featured stay separate
+            const hasNewArtists = item.artists && Array.isArray(item.artists.primary);
+            const primary = hasNewArtists
+                ? splitArtists(item.artists.primary)
+                : splitArtists(item.primaryArtists, item.primaryArtistsId);
+            const featured = hasNewArtists
+                ? splitArtists(item.artists.featured || [])
+                : splitArtists(item.featuredArtists, item.featuredArtistsId);
+
+            item.artists = {
+                primary,
+                featured,
+                all: [...primary, ...featured]
+            };
+
+            if (item.album && typeof item.album === 'string') {
+                item.album = { id: '', name: item.album, url: '' };
+            }
+
+            if (item.duration !== undefined && item.duration !== null) {
+                item.duration = parseInt(item.duration) || 0;
+            }
+
+            // Songs come with empty type in this API
+            if (!item.type && item.downloadUrl.length > 0) {
+                item.type = 'song';
+            }
+
+            return item;
+        }
+
+        function normalizeResponse(data) {
+            if (!data || !data.data) return data;
+            const d = data.data;
+
+            if (Array.isArray(d)) {
+                data.data = d.map(normalizeItem);
+            } else if (typeof d === 'object') {
+                ['results', 'songs', 'albums', 'playlists', 'artists'].forEach(key => {
+                    if (Array.isArray(d[key])) d[key] = d[key].map(normalizeItem);
+                });
+                if (d.image) d.image = normalizeMediaList(d.image);
+            }
+            return data;
+        }
+
+        // Safely get a list of items from different response shapes
+        function extractList(data) {
+            const d = data?.data;
+            if (!d) return [];
+            if (Array.isArray(d)) return d;
+            return d.results || d.songs || [];
+        }
+
+        // ========== HELPERS ==========
+        function getImageUrl(item, preferredIndex = 2) {
+            const imgs = item?.image;
+            if (!Array.isArray(imgs) || !imgs.length) return PLACEHOLDER_IMG;
+            return imgs[preferredIndex]?.url
+                || imgs[imgs.length - 1]?.url
+                || imgs[0]?.url
+                || PLACEHOLDER_IMG;
+        }
+
+        function getArtistNames(item, fallback = 'Unknown Artist') {
+            const all = item?.artists?.all?.length
+                ? item.artists.all
+                : (item?.artists?.primary || []);
+            const names = all.map(a => a.name).filter(Boolean).join(', ');
+            return names || fallback;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text == null ? '' : String(text);
+            return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Safe for use inside onclick="fn('...')"
+        function attrStr(text) {
+            const js = String(text == null ? '' : text).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return escapeHtml(js);
+        }
+
         // ✅ BACKGROUND PLAYBACK - Wake Lock
         async function requestWakeLock() {
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock activated');
                     wakeLock.addEventListener('release', () => {
                         console.log('Wake Lock released');
                     });
@@ -3120,11 +3247,11 @@
             }
         });
 
-        // ✅ IMPROVED MEDIA SESSION
+        // ✅ MEDIA SESSION
         function setupMediaSession(song) {
             if ('mediaSession' in navigator) {
-                const imageUrl = song.image?.[2]?.url || song.image?.[1]?.url || 'https://via.placeholder.com/512';
-                const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+                const imageUrl = getImageUrl(song, 2);
+                const artistName = getArtistNames(song);
 
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: song.name || 'Unknown Song',
@@ -3147,9 +3274,7 @@
                             updatePlayPauseButtons();
                             requestWakeLock();
                         })
-                        .catch(err => {
-                            console.error('Media session play error:', err);
-                        });
+                        .catch(err => console.error('Media session play error:', err));
                 });
 
                 navigator.mediaSession.setActionHandler('pause', () => {
@@ -3159,13 +3284,8 @@
                     releaseWakeLock();
                 });
 
-                navigator.mediaSession.setActionHandler('previoustrack', () => {
-                    previousSong();
-                });
-
-                navigator.mediaSession.setActionHandler('nexttrack', () => {
-                    nextSong();
-                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => previousSong());
+                navigator.mediaSession.setActionHandler('nexttrack', () => nextSong());
 
                 navigator.mediaSession.setActionHandler('seekbackward', (details) => {
                     audio.currentTime = Math.max(audio.currentTime - (details.seekOffset || 10), 0);
@@ -3188,18 +3308,18 @@
         }
 
         function updatePositionState() {
-            if ('setPositionState' in navigator.mediaSession) {
-                if (audio.duration && !isNaN(audio.duration)) {
+            if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+                if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
                     navigator.mediaSession.setPositionState({
                         duration: audio.duration,
                         playbackRate: audio.playbackRate,
-                        position: audio.currentTime
+                        position: Math.min(audio.currentTime, audio.duration)
                     });
                 }
             }
         }
 
-        // ✅ OPTIMIZED INIT
+        // ✅ INIT
         (function() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -3266,13 +3386,8 @@
                 showToast('Playback error', 'error');
             });
 
-            audio.addEventListener('waiting', () => {
-                console.log('Buffering...');
-            });
-
-            audio.addEventListener('canplay', () => {
-                console.log('Can play');
-            });
+            audio.addEventListener('waiting', () => console.log('Buffering...'));
+            audio.addEventListener('canplay', () => console.log('Can play'));
         }
 
         function handleSongEnd() {
@@ -3290,11 +3405,8 @@
 
             searchInput.addEventListener('input', function(e) {
                 const clearBtn = document.getElementById('searchClear');
-                if (e.target.value.length > 0) {
-                    clearBtn.classList.add('active');
-                } else {
-                    clearBtn.classList.remove('active');
-                }
+                if (e.target.value.length > 0) clearBtn.classList.add('active');
+                else clearBtn.classList.remove('active');
             });
 
             searchInput.addEventListener('keypress', function(e) {
@@ -3311,11 +3423,8 @@
 
             searchInputMobile.addEventListener('input', function(e) {
                 const clearBtn = document.getElementById('searchClearMobile');
-                if (e.target.value.length > 0) {
-                    clearBtn.classList.add('active');
-                } else {
-                    clearBtn.classList.remove('active');
-                }
+                if (e.target.value.length > 0) clearBtn.classList.add('active');
+                else clearBtn.classList.remove('active');
             });
 
             searchInputMobile.addEventListener('keypress', function(e) {
@@ -3352,7 +3461,6 @@
             performSearch(query, type);
         }
 
-        // ✅ FIXED: Mobile search with proper modal closing
         function searchMobile() {
             const query = document.getElementById('searchInputMobile').value.trim();
             const type = document.getElementById('searchTypeMobile').value;
@@ -3362,19 +3470,27 @@
                 return;
             }
 
-            // Close modal first
             closeMobileSearch();
 
-            // Small delay for smooth transition
             setTimeout(() => {
-                scrollToTop(false); // ✅ Scroll to top
+                scrollToTop(false);
                 performSearch(query, type);
             }, 100);
         }
 
-        // ✅ COMPLETE FIXED SEARCH FUNCTION
+        function buildSearchEndpoint(type, query, page) {
+            const q = encodeURIComponent(query);
+            switch (type) {
+                case 'songs': return `/search/songs?query=${q}&page=${page}&limit=20`;
+                case 'albums': return `/search/albums?query=${q}&page=${page}&limit=20`;
+                case 'artists': return `/search/artists?query=${q}&page=${page}&limit=20`;
+                case 'playlists': return `/search/playlists?query=${q}&page=${page}&limit=20`;
+                default: return `/search?query=${q}&page=${page}&limit=20`;
+            }
+        }
+
+        // ✅ SEARCH
         async function performSearch(query, type) {
-            // ✅ Scroll to top immediately
             scrollToTop(false);
 
             currentContext = {
@@ -3386,7 +3502,7 @@
                 albums: [],
                 playlists: [],
                 artists: [],
-                currentPage: 0,
+                currentPage: 1,
                 totalSongs: 0,
                 hasMore: false,
                 isLoading: false,
@@ -3401,64 +3517,44 @@
 
             hideYouTubeSection();
 
+            const promises = [fetchAPI(buildSearchEndpoint(type, query, 1))];
 
-            let endpoint = '';
-            switch(type) {
-                case 'songs': 
-                    endpoint = `/search/songs?query=${encodeURIComponent(query)}&page=0&limit=20`; 
-                    break;
-                case 'albums': 
-                    endpoint = `/search/albums?query=${encodeURIComponent(query)}&page=0&limit=20`; 
-                    break;
-                case 'artists': 
-                    endpoint = `/search/artists?query=${encodeURIComponent(query)}&page=0&limit=20`; 
-                    break;
-                case 'playlists': 
-                    endpoint = `/search/playlists?query=${encodeURIComponent(query)}&page=0&limit=20`; 
-                    break;
-                default: 
-                    endpoint = `/search?query=${encodeURIComponent(query)}&page=0&limit=20`;
-            }
-
-            const promises = [fetchAPI(endpoint)];
-
-            // ✅ Only search YouTube for songs
             if (type === 'songs') {
                 showLoading('youtubeResultsGrid');
                 promises.push(searchYouTube(query, 1));
             }
 
             const [saavnData, youtubeData] = await Promise.all(promises);
+            const saavnResults = extractList(saavnData);
 
-            // ========== DISPLAY SAAVN RESULTS ==========
-            if (saavnData?.data?.results && saavnData.data.results.length > 0) {
-                document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-search"></i> "${query}"`;
+            // ========== SAAVN RESULTS ==========
+            if (saavnResults.length > 0) {
+                document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-search"></i> "${escapeHtml(query)}"`;
 
-                const total = saavnData.data.total || saavnData.data.results.length;
-                currentContext.totalSongs = total;
-                currentContext.hasMore = saavnData.data.results.length >= 20;
+                currentContext.totalSongs = saavnData.data.total || saavnResults.length;
+                currentContext.hasMore = type !== 'all' && type !== undefined && saavnResults.length >= 20;
 
                 if (type === 'albums') {
-                    currentContext.albums = saavnData.data.results;
-                    saavnData.data.results.forEach(a => currentContext.loadedIds.add(a.id));
-                    displayAlbums(saavnData.data.results, 'searchResultsGrid');
+                    currentContext.albums = saavnResults;
+                    saavnResults.forEach(a => currentContext.loadedIds.add(a.id));
+                    displayAlbums(saavnResults, 'searchResultsGrid');
                 } else if (type === 'playlists') {
-                    currentContext.playlists = saavnData.data.results;
-                    saavnData.data.results.forEach(p => currentContext.loadedIds.add(p.id));
-                    displayPlaylists(saavnData.data.results, 'searchResultsGrid');
+                    currentContext.playlists = saavnResults;
+                    saavnResults.forEach(p => currentContext.loadedIds.add(p.id));
+                    displayPlaylists(saavnResults, 'searchResultsGrid');
                 } else if (type === 'artists') {
-                    currentContext.artists = saavnData.data.results;
-                    saavnData.data.results.forEach(a => currentContext.loadedIds.add(a.id));
-                    displayArtists(saavnData.data.results, 'searchResultsGrid');
+                    currentContext.artists = saavnResults;
+                    saavnResults.forEach(a => currentContext.loadedIds.add(a.id));
+                    displayArtists(saavnResults, 'searchResultsGrid');
                 } else if (type === 'songs') {
-                    currentContext.songs = saavnData.data.results;
-                    saavnData.data.results.forEach(s => currentContext.loadedIds.add(s.id));
-                    displaySongs(saavnData.data.results, 'searchResultsGrid');
+                    currentContext.songs = saavnResults;
+                    saavnResults.forEach(s => currentContext.loadedIds.add(s.id));
+                    displaySongs(saavnResults, 'searchResultsGrid');
                 } else {
-                    displayMixedResults(saavnData.data.results, 'searchResultsGrid');
+                    displayMixedResults(saavnResults, 'searchResultsGrid');
                 }
 
-                document.getElementById('saavnResultsCount').textContent = saavnData.data.results.length;
+                document.getElementById('saavnResultsCount').textContent = saavnResults.length;
 
                 if (currentContext.hasMore) {
                     document.getElementById('loadMoreContainer').classList.add('active');
@@ -3468,7 +3564,7 @@
                 document.getElementById('saavnResultsCount').textContent = '0';
             }
 
-            // ========== DISPLAY YOUTUBE RESULTS (only for songs) ==========
+            // ========== YOUTUBE RESULTS (songs only) ==========
             if (type === 'songs') {
                 if (youtubeData?.results && youtubeData.results.length > 0) {
                     youtubeResults = youtubeData.results;
@@ -3478,35 +3574,30 @@
                     displayYouTubeResults(youtubeData.results, 'youtubeResultsGrid');
                     document.getElementById('youtubeResultsCount').textContent = youtubeData.results.length;
 
-                    // ✅ Show YouTube section
                     showYouTubeSection();
 
                     document.getElementById('searchResultsInfo').innerHTML = `
-                        <span><i class="fas fa-music"></i> ${saavnData?.data?.results?.length || 0} Saavn songs</span>
+                        <span><i class="fas fa-music"></i> ${saavnResults.length} Saavn songs</span>
                         <span style="margin-left: 1rem;"><i class="fab fa-youtube"></i> ${youtubeData.results.length} YouTube videos</span>
                     `;
                 } else {
                     document.getElementById('youtubeResultsGrid').innerHTML = '<div class="empty-state"><i class="fab fa-youtube"></i><p>No YouTube results found</p></div>';
                     document.getElementById('youtubeResultsCount').textContent = '0';
 
-                    // ✅ Still show YouTube section even if empty
                     showYouTubeSection();
 
                     document.getElementById('searchResultsInfo').innerHTML = `
-                        <span><i class="fas fa-check-circle"></i> ${saavnData?.data?.results?.length || 0} Saavn results</span>
+                        <span><i class="fas fa-check-circle"></i> ${saavnResults.length} Saavn results</span>
                         <span style="margin-left: 1rem; color: var(--text-muted);"><i class="fab fa-youtube"></i> 0 YouTube results</span>
                     `;
                 }
             } else {
-                // ✅ Hide for non-song searches
                 document.getElementById('searchResultsInfo').innerHTML = `
-                    <span><i class="fas fa-check-circle"></i> Showing ${saavnData?.data?.results?.length || 0} results</span>
+                    <span><i class="fas fa-check-circle"></i> Showing ${saavnResults.length} results</span>
                 `;
             }
         }
-            
 
-        // ✅ FIXED: Show YouTube section properly
         function showYouTubeSection() {
             const youtubeSection = document.getElementById('youtubeResultsSection');
             const toggleBtn = document.getElementById('youtubeToggleBtn');
@@ -3515,12 +3606,10 @@
 
             if (!youtubeSection || !toggleBtn || !searchContainer || !saavnSection) return;
 
-            // Add show classes
             youtubeSection.classList.add('show-youtube');
             toggleBtn.classList.add('show-toggle');
             searchContainer.classList.add('has-youtube');
 
-            // ✅ On mobile: Saavn visible by default, YouTube hidden
             if (window.innerWidth < 1024) {
                 youtubeSection.classList.add('mobile-hidden');
                 saavnSection.classList.remove('mobile-hidden');
@@ -3531,13 +3620,11 @@
                 const toggleText = document.getElementById('youtubeToggleText');
                 if (toggleText) toggleText.textContent = 'YouTube Results';
             } else {
-                // Desktop: Both visible
                 youtubeSection.classList.remove('mobile-hidden');
                 saavnSection.classList.remove('mobile-hidden');
             }
         }
 
-        // ✅ FIXED: Hide YouTube section completely
         function hideYouTubeSection() {
             const youtubeSection = document.getElementById('youtubeResultsSection');
             const toggleBtn = document.getElementById('youtubeToggleBtn');
@@ -3546,27 +3633,22 @@
 
             if (!youtubeSection || !toggleBtn || !searchContainer || !saavnSection) return;
 
-            // Remove ALL classes
             youtubeSection.classList.remove('show-youtube');
             youtubeSection.classList.remove('mobile-hidden');
             toggleBtn.classList.remove('show-toggle');
             toggleBtn.classList.remove('active');
             searchContainer.classList.remove('has-youtube');
 
-            // Ensure Saavn is visible
             saavnSection.classList.remove('mobile-hidden');
 
-            // Reset state
             isYouTubeView = false;
 
-            // Clear content
             const youtubeGrid = document.getElementById('youtubeResultsGrid');
             const youtubeCount = document.getElementById('youtubeResultsCount');
             if (youtubeGrid) youtubeGrid.innerHTML = '';
             if (youtubeCount) youtubeCount.textContent = '0';
         }
 
-        // ✅ FIXED: Toggle between Saavn and YouTube on mobile
         function toggleYouTubeResults() {
             isYouTubeView = !isYouTubeView;
 
@@ -3578,13 +3660,11 @@
             if (!saavnSection || !youtubeSection || !toggleBtn || !toggleText) return;
 
             if (isYouTubeView) {
-                // Show YouTube, hide Saavn
                 saavnSection.classList.add('mobile-hidden');
                 youtubeSection.classList.remove('mobile-hidden');
                 toggleBtn.classList.add('active');
                 toggleText.textContent = 'Saavn Results';
             } else {
-                // Show Saavn, hide YouTube
                 saavnSection.classList.remove('mobile-hidden');
                 youtubeSection.classList.add('mobile-hidden');
                 toggleBtn.classList.remove('active');
@@ -3596,8 +3676,7 @@
         async function searchYouTube(query, page = 1) {
             try {
                 const response = await fetch(`${YOUTUBE_API_BASE}/search?q=${encodeURIComponent(query)}&page=${page}&limit=25`);
-                const data = await response.json();
-                return data;
+                return await response.json();
             } catch (error) {
                 console.error('YouTube search error:', error);
                 return null;
@@ -3609,12 +3688,10 @@
                 const response = await fetch(`${YOUTUBE_DOWNLOAD_API}?id=${videoId}`, {
                     headers: {
                         'x-rapidapi-host': 'youtube-mp36.p.rapidapi.com',
-                        'x-rapidapi-key': RAPIDAPI_KEY,
-                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+                        'x-rapidapi-key': RAPIDAPI_KEY
                     }
                 });
-                const data = await response.json();
-                return data;
+                return await response.json();
             } catch (error) {
                 console.error('YouTube download error:', error);
                 return null;
@@ -3664,56 +3741,25 @@
 
         // ========== PLAYER LOADING STATE ==========
         function showPlayerLoadingState(isLoading) {
-            // Mini player button
-            const playPauseBtnMini = document.getElementById('playPauseBtnMini');
-            if (playPauseBtnMini) {
+            ['playPauseBtnMini', 'playPauseBtn', 'fullscreenPlayPauseBtn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
                 if (isLoading) {
-                    playPauseBtnMini.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    playPauseBtnMini.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
                 } else {
-                    const icon = isPlaying ? 'pause' : 'play';
-                    playPauseBtnMini.innerHTML = `<i class="fas fa-${icon}"></i>`;
-                    playPauseBtnMini.disabled = false;
+                    btn.innerHTML = `<i class="fas fa-${isPlaying ? 'pause' : 'play'}"></i>`;
+                    btn.disabled = false;
                 }
-            }
+            });
 
-            // Full player button
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            if (playPauseBtn) {
-                if (isLoading) {
-                    playPauseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    playPauseBtn.disabled = true;
-                } else {
-                    const icon = isPlaying ? 'pause' : 'play';
-                    playPauseBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
-                    playPauseBtn.disabled = false;
-                }
-            }
-
-            // Fullscreen player button
-            const fullscreenBtn = document.getElementById('fullscreenPlayPauseBtn');
-            if (fullscreenBtn) {
-                if (isLoading) {
-                    fullscreenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    fullscreenBtn.disabled = true;
-                } else {
-                    const icon = isPlaying ? 'pause' : 'play';
-                    fullscreenBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
-                    fullscreenBtn.disabled = false;
-                }
-            }
-
-            // Player image loading overlay
             const playerImg = document.getElementById('playerImgMini');
             if (playerImg) {
-                if (isLoading) {
-                    playerImg.classList.add('loading');
-                } else {
-                    playerImg.classList.remove('loading');
-                }
+                if (isLoading) playerImg.classList.add('loading');
+                else playerImg.classList.remove('loading');
             }
         }
-        
+
         async function playYouTubeVideo(index) {
             const video = youtubeResults[index];
             if (!video) return;
@@ -3742,7 +3788,6 @@
             updatePlayerUI(false);
             updateFullscreenPlayerUI(false);
 
-            // ✅ STEP 1: Show loading
             showPlayerLoadingState(true);
             showToast('⏳ Loading from YouTube...', 'info');
 
@@ -3762,7 +3807,6 @@
 
                     audio.play()
                         .then(() => {
-                            // ✅ STEP 2: Hide loading on success
                             showPlayerLoadingState(false);
                             isPlaying = true;
                             updatePlayPauseButtons();
@@ -3771,7 +3815,6 @@
                         })
                         .catch(err => {
                             console.error('Play error:', err);
-                            // ✅ STEP 3: Hide loading on error
                             showPlayerLoadingState(false);
                             isPlaying = false;
                             updatePlayPauseButtons();
@@ -3790,13 +3833,11 @@
                     updateBadges();
                     updateStats();
                 } else {
-                    // ✅ STEP 4: Hide loading if no audio link
                     showPlayerLoadingState(false);
                     showToast('Failed to load YouTube audio', 'error');
                 }
             } catch (error) {
                 console.error('YouTube play error:', error);
-                // ✅ STEP 5: Hide loading on catch error
                 showPlayerLoadingState(false);
                 showToast('Failed to play YouTube video', 'error');
             }
@@ -3805,16 +3846,12 @@
         function parseDuration(duration) {
             if (!duration) return 0;
             const parts = duration.split(':').map(Number);
-            if (parts.length === 2) {
-                return parts[0] * 60 + parts[1];
-            } else if (parts.length === 3) {
-                return parts[0] * 3600 + parts[1] * 60 + parts[2];
-            }
+            if (parts.length === 2) return parts[0] * 60 + parts[1];
+            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
             return 0;
         }
 
-        // ========== REST OF THE FUNCTIONS (keeping your existing code) ==========
-
+        // ========== SIDEBAR ==========
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
@@ -3823,28 +3860,24 @@
             overlay.classList.toggle('active');
 
             if (sidebar.classList.contains('active')) {
-                if (window.innerWidth < 1024) {
-                    document.body.style.overflow = 'hidden';
-                }
+                if (window.innerWidth < 1024) document.body.style.overflow = 'hidden';
             } else {
                 document.body.style.overflow = '';
             }
         }
 
         function closeSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
             document.body.style.overflow = '';
         }
 
+        // ========== API ==========
         async function fetchAPI(endpoint) {
             try {
                 const response = await fetch(`${API_BASE}${endpoint}`);
                 const data = await response.json();
-                return data;
+                return normalizeResponse(data);
             } catch (error) {
                 console.error('API Error:', error);
                 showToast('Network error', 'error');
@@ -3852,52 +3885,7 @@
             }
         }
 
-        function normalizeBackupAPIResponse(songs) {
-            return songs.map(song => {
-                const normalizedImage = song.image?.map(img => ({
-                    quality: img.quality,
-                    url: img.link
-                })) || [];
-
-                const normalizedDownloadUrl = song.downloadUrl?.map(dl => ({
-                    quality: dl.quality,
-                    url: dl.link
-                })) || [];
-
-                const artistNames = song.primaryArtists?.split(', ') || [];
-                const artistIds = song.primaryArtistsId?.split(', ') || [];
-
-                const primaryArtists = artistNames.map((name, index) => ({
-                    id: artistIds[index] || '',
-                    name: name.trim()
-                }));
-
-                return {
-                    id: song.id,
-                    name: song.name,
-                    type: song.type || 'song',
-                    album: song.album,
-                    year: song.year,
-                    releaseDate: song.releaseDate,
-                    duration: parseInt(song.duration) || 0,
-                    label: song.label,
-                    explicitContent: song.explicitContent,
-                    playCount: song.playCount,
-                    language: song.language,
-                    hasLyrics: song.hasLyrics === 'true',
-                    url: song.url,
-                    copyright: song.copyright,
-                    image: normalizedImage,
-                    downloadUrl: normalizedDownloadUrl,
-                    artists: {
-                        primary: primaryArtists,
-                        featured: [],
-                        all: primaryArtists
-                    }
-                };
-            });
-        }
-
+        // ========== HOME ==========
         async function loadHome() {
             showSkeletonLoader('trendingNow', 6);
             showSkeletonLoader('popularAlbums', 6);
@@ -3905,198 +3893,158 @@
             showSkeletonLoader('topCharts', 6);
             showSkeletonLoader('madeForYou', 6);
 
-            const promises = [
+            await Promise.allSettled([
                 loadTrendingNow(),
                 loadPopularAlbums(),
                 loadEditorialPicks(),
                 loadTopCharts(),
                 loadMadeForYou()
-            ];
-
-            await Promise.allSettled(promises);
+            ]);
             updateStats();
+        }
+
+        function showSectionError(gridId) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            grid.className = 'grid';
+            grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
         }
 
         async function loadTrendingNow() {
             try {
-                const data = await fetchAPI('/search/playlists?query=trending viral&page=0&limit=6');
-                if (data?.data?.results?.length) {
-                    const grid = document.getElementById('trendingNow');
-                    grid.className = 'grid';
-                    displayPlaylists(data.data.results, 'trendingNow');
-                } else {
-                    throw new Error('No results');
-                }
+                const data = await fetchAPI('/search/playlists?query=trending viral&page=1&limit=6');
+                const list = extractList(data);
+                if (!list.length) throw new Error('No results');
+                document.getElementById('trendingNow').className = 'grid';
+                displayPlaylists(list, 'trendingNow');
             } catch (error) {
-                const grid = document.getElementById('trendingNow');
-                grid.className = 'grid';
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                showSectionError('trendingNow');
             }
         }
 
         async function loadPopularAlbums() {
             try {
-                const data = await fetchAPI('/search/albums?query=latest bollywood 2024&page=0&limit=6');
-                if (data?.data?.results?.length) {
-                    const grid = document.getElementById('popularAlbums');
-                    grid.className = 'grid';
-                    displayAlbums(data.data.results, 'popularAlbums');
-                } else {
-                    throw new Error('No results');
-                }
+                const data = await fetchAPI('/search/albums?query=latest bollywood 2024&page=1&limit=6');
+                const list = extractList(data);
+                if (!list.length) throw new Error('No results');
+                document.getElementById('popularAlbums').className = 'grid';
+                displayAlbums(list, 'popularAlbums');
             } catch (error) {
-                const grid = document.getElementById('popularAlbums');
-                grid.className = 'grid';
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                showSectionError('popularAlbums');
             }
         }
 
         async function loadEditorialPicks() {
             try {
-                const data = await fetchAPI('/search/albums?query=fresh music 2024&page=0&limit=6');
-                if (data?.data?.results?.length) {
-                    const grid = document.getElementById('editorialPicks');
-                    grid.className = 'grid';
-                    displayAlbums(data.data.results, 'editorialPicks');
-                } else {
-                    throw new Error('No results');
-                }
+                const data = await fetchAPI('/search/albums?query=fresh music 2024&page=1&limit=6');
+                const list = extractList(data);
+                if (!list.length) throw new Error('No results');
+                document.getElementById('editorialPicks').className = 'grid';
+                displayAlbums(list, 'editorialPicks');
             } catch (error) {
-                const grid = document.getElementById('editorialPicks');
-                grid.className = 'grid';
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                showSectionError('editorialPicks');
             }
         }
 
         async function loadTopCharts() {
             try {
-                const [data1, data2, data3, data4] = await Promise.all([
-                    fetchAPI('/search/playlists?query=Most Streamed Love Songs Hindi&page=0&limit=2'),
-                    fetchAPI('/search/playlists?query=Most Streamed Love Songs English&page=0&limit=2'),
-                    fetchAPI('/search/playlists?query=Trending Today&page=0&limit=2'),
-                    fetchAPI('/search/playlists?query=Most Searched Songs Hindi&page=0&limit=2')
+                const responses = await Promise.all([
+                    fetchAPI('/search/playlists?query=Most Streamed Love Songs Hindi&page=1&limit=2'),
+                    fetchAPI('/search/playlists?query=Most Streamed Love Songs English&page=1&limit=2'),
+                    fetchAPI('/search/playlists?query=Trending Today&page=1&limit=2'),
+                    fetchAPI('/search/playlists?query=Most Searched Songs Hindi&page=1&limit=2')
                 ]);
 
+                const lists = responses.map(extractList);
+
                 let combinedResults = [];
+                lists.forEach(l => { if (l.length) combinedResults.push(l[0]); });
 
-                if (data1?.data?.results?.length) combinedResults.push(data1.data.results[0]);
-                if (data2?.data?.results?.length) combinedResults.push(data2.data.results[0]);
-                if (data3?.data?.results?.length) combinedResults.push(data3.data.results[0]);
-                if (data4?.data?.results?.length) combinedResults.push(data4.data.results[0]);
-
-                const allResults = [
-                    ...(data1?.data?.results || []).slice(1),
-                    ...(data2?.data?.results || []).slice(1),
-                    ...(data3?.data?.results || []).slice(1),
-                    ...(data4?.data?.results || []).slice(1)
-                ];
-
+                const allResults = lists.flatMap(l => l.slice(1));
                 const addedIds = new Set(combinedResults.map(r => r.id));
                 const uniqueResults = allResults.filter(r => !addedIds.has(r.id));
                 combinedResults = [...combinedResults, ...uniqueResults].slice(0, 6);
 
-                const grid = document.getElementById('topCharts');
-                grid.className = 'grid';
+                if (!combinedResults.length) throw new Error('No results');
 
-                if (combinedResults.length > 0) {
-                    displayPlaylists(combinedResults, 'topCharts');
-                } else {
-                    throw new Error('No results');
-                }
+                document.getElementById('topCharts').className = 'grid';
+                displayPlaylists(combinedResults, 'topCharts');
             } catch (error) {
-                const grid = document.getElementById('topCharts');
-                grid.className = 'grid';
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                showSectionError('topCharts');
             }
         }
 
         async function loadMadeForYou() {
             try {
-                const data = await fetchAPI('/search/playlists?query=romantic love hindi&page=0&limit=6');
-                if (data?.data?.results?.length) {
-                    const grid = document.getElementById('madeForYou');
-                    grid.className = 'grid';
-                    displayPlaylists(data.data.results, 'madeForYou');
-                } else {
-                    throw new Error('No results');
-                }
+                const data = await fetchAPI('/search/playlists?query=romantic love hindi&page=1&limit=6');
+                const list = extractList(data);
+                if (!list.length) throw new Error('No results');
+                document.getElementById('madeForYou').className = 'grid';
+                displayPlaylists(list, 'madeForYou');
             } catch (error) {
-                const grid = document.getElementById('madeForYou');
-                grid.className = 'grid';
-                grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load</p></div>';
+                showSectionError('madeForYou');
             }
         }
 
-            function loadTrendingPlaylistsTab() {
-                // ✅ Scroll to top
-                scrollToTop(false);
-
-                switchTab('trending-playlists');
-                if (!document.getElementById('trendingPlaylistsGrid').innerHTML) {
-                    loadTrendingPlaylists();
-                }
-            }
-
-            function loadTrendingAlbumsTab() {
-                // ✅ Scroll to top
-                scrollToTop(false);
-
-                switchTab('trending-albums');
-                if (!document.getElementById('trendingAlbumsGrid').innerHTML) {
-                    loadTrendingAlbums();
-                }
-            }
-
-        async function loadTrendingAlbums() {
-            showLoading('trendingAlbumsGrid');
-            const data = await fetchAPI('/search/albums?query=2024&page=0&limit=20');
-            if (data?.data?.results) {
-                displayAlbums(data.data.results, 'trendingAlbumsGrid');
+        function loadTrendingPlaylistsTab() {
+            scrollToTop(false);
+            switchTab('trending-playlists');
+            if (!document.getElementById('trendingPlaylistsGrid').innerHTML) {
+                loadTrendingPlaylists();
             }
         }
 
         function loadTrendingAlbumsTab() {
+            scrollToTop(false);
             switchTab('trending-albums');
             if (!document.getElementById('trendingAlbumsGrid').innerHTML) {
                 loadTrendingAlbums();
             }
         }
 
-            async function filterPlaylists(category) {
-                // ✅ Scroll to top
-                scrollToTop(true); // Smooth scroll for filters
+        async function loadTrendingPlaylists() {
+            showLoading('trendingPlaylistsGrid');
+            const data = await fetchAPI('/search/playlists?query=trending&page=1&limit=20');
+            const list = extractList(data);
+            if (list.length) displayPlaylists(list, 'trendingPlaylistsGrid');
+        }
 
-                document.querySelectorAll('#trending-playlists .chip').forEach(c => c.classList.remove('active'));
-                event.target.classList.add('active');
-                showLoading('trendingPlaylistsGrid');
-                const query = category === 'all' ? 'trending' : category;
-                const data = await fetchAPI(`/search/playlists?query=${query}&page=0&limit=20`);
-                if (data?.data?.results) {
-                    displayPlaylists(data.data.results, 'trendingPlaylistsGrid');
-                }
-            }
+        async function loadTrendingAlbums() {
+            showLoading('trendingAlbumsGrid');
+            const data = await fetchAPI('/search/albums?query=2024&page=1&limit=20');
+            const list = extractList(data);
+            if (list.length) displayAlbums(list, 'trendingAlbumsGrid');
+        }
 
-            async function filterAlbums(category) {
-                // ✅ Scroll to top
-                scrollToTop(true); // Smooth scroll for filters
+        async function filterPlaylists(category) {
+            scrollToTop(true);
 
-                document.querySelectorAll('#trending-albums .chip').forEach(c => c.classList.remove('active'));
-                event.target.classList.add('active');
-                showLoading('trendingAlbumsGrid');
-                const query = category === 'all' ? '2024' : category;
-                const data = await fetchAPI(`/search/albums?query=${query}&page=0&limit=20`);
-                if (data?.data?.results) {
-                    displayAlbums(data.data.results, 'trendingAlbumsGrid');
-                }
-            }
+            document.querySelectorAll('#trending-playlists .chip').forEach(c => c.classList.remove('active'));
+            if (typeof event !== 'undefined' && event?.target) event.target.classList.add('active');
+            showLoading('trendingPlaylistsGrid');
+            const query = category === 'all' ? 'trending' : category;
+            const data = await fetchAPI(`/search/playlists?query=${encodeURIComponent(query)}&page=1&limit=20`);
+            const list = extractList(data);
+            if (list.length) displayPlaylists(list, 'trendingPlaylistsGrid');
+        }
 
+        async function filterAlbums(category) {
+            scrollToTop(true);
+
+            document.querySelectorAll('#trending-albums .chip').forEach(c => c.classList.remove('active'));
+            if (typeof event !== 'undefined' && event?.target) event.target.classList.add('active');
+            showLoading('trendingAlbumsGrid');
+            const query = category === 'all' ? '2024' : category;
+            const data = await fetchAPI(`/search/albums?query=${encodeURIComponent(query)}&page=1&limit=20`);
+            const list = extractList(data);
+            if (list.length) displayAlbums(list, 'trendingAlbumsGrid');
+        }
+
+        // ========== LOAD MORE ==========
+        // Supports: search (page starts at 1) and artist songs (page starts at 1).
+        // Albums and playlists have no pagination in this API.
         async function loadMore() {
             if (currentContext.isLoading || !currentContext.hasMore) return;
-            if (currentContext.useBackupAPI) {
-                document.getElementById('loadMoreContainer').classList.remove('active');
-                showToast('All songs loaded', 'info');
-                return;
-            }
 
             const btn = document.getElementById('loadMoreBtn');
             const btnText = document.getElementById('loadMoreText');
@@ -4106,168 +4054,55 @@
             btnText.textContent = 'Loading...';
             currentContext.currentPage++;
 
-            let endpoint = '';
-            let data = null;
+            let list = [];
 
             if (currentContext.type === 'search') {
                 const { query, searchType, currentPage } = currentContext;
-
-                switch(searchType) {
-                    case 'songs': 
-                        endpoint = `/search/songs?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
-                        break;
-                    case 'albums': 
-                        endpoint = `/search/albums?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
-                        break;
-                    case 'artists': 
-                        endpoint = `/search/artists?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
-                        break;
-                    case 'playlists': 
-                        endpoint = `/search/playlists?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`; 
-                        break;
-                    default: 
-                        endpoint = `/search?query=${encodeURIComponent(query)}&page=${currentPage}&limit=20`;
-                }
-
-                data = await fetchAPI(endpoint);
-
-                if (data?.data?.results && data.data.results.length > 0) {
-                    let newItems = [];
-
-                    data.data.results.forEach(item => {
-                        if (!currentContext.loadedIds.has(item.id)) {
-                            newItems.push(item);
-                            currentContext.loadedIds.add(item.id);
-                        }
-                    });
-
-                    if (newItems.length === 0) {
-                        currentContext.isLoading = false;
-                        btn.disabled = false;
-                        btnText.textContent = 'Load More';
-                        setTimeout(() => loadMore(), 100);
-                        return;
-                    }
-
-                    if (searchType === 'songs') {
-                        currentContext.songs = [...currentContext.songs, ...newItems];
-                        displaySongs(newItems, 'searchResultsGrid', true);
-                    } else if (searchType === 'albums') {
-                        currentContext.albums = [...currentContext.albums, ...newItems];
-                        displayAlbums(newItems, 'searchResultsGrid', true);
-                    } else if (searchType === 'playlists') {
-                        currentContext.playlists = [...currentContext.playlists, ...newItems];
-                        displayPlaylists(newItems, 'searchResultsGrid', true);
-                    } else if (searchType === 'artists') {
-                        currentContext.artists = [...currentContext.artists, ...newItems];
-                        displayArtists(newItems, 'searchResultsGrid', true);
-                    }
-
-                    const currentCount = document.querySelectorAll('#searchResultsGrid .card').length;
-                    document.getElementById('searchResultsInfo').innerHTML = `
-                        <span><i class="fas fa-check-circle"></i> Showing ${currentCount} results</span>
-                    `;
-
-                    currentContext.hasMore = data.data.results.length === 20;
-                    showToast(`+${newItems.length} loaded`, 'success');
-                } else {
-                    currentContext.hasMore = false;
-                }
-
-            } else if (currentContext.type === 'playlist') {
-                endpoint = `/playlists?id=${currentContext.id}&page=${currentContext.currentPage}&limit=20`;
-                data = await fetchAPI(endpoint);
-
-                if (data?.data?.songs && data.data.songs.length > 0) {
-                    let newSongs = [];
-
-                    if (!currentContext.loadedIds) {
-                        currentContext.loadedIds = new Set(currentContext.songs.map(s => s.id));
-                    }
-
-                    data.data.songs.forEach(song => {
-                        if (!currentContext.loadedIds.has(song.id)) {
-                            newSongs.push(song);
-                            currentContext.loadedIds.add(song.id);
-                        }
-                    });
-
-                    if (newSongs.length === 0) {
-                        currentContext.isLoading = false;
-                        btn.disabled = false;
-                        btnText.textContent = 'Load More';
-                        setTimeout(() => loadMore(), 100);
-                        return;
-                    }
-
-                    currentContext.songs = [...currentContext.songs, ...newSongs];
-                    displaySongs(newSongs, 'searchResultsGrid', true);
-
-                    const infoMsg = currentContext.totalSongs !== '?' 
-                        ? `Loaded ${currentContext.songs.length} songs (Total: ${currentContext.totalSongs})` 
-                        : `Loaded ${currentContext.songs.length} songs`;
-
-                    document.getElementById('searchResultsInfo').innerHTML = `
-                        <span><i class="fas fa-music"></i> ${infoMsg}</span>
-                    `;
-
-                    currentContext.hasMore = data.data.songs.length === 20;
-                    showToast(`+${newSongs.length} songs`, 'success');
-                } else {
-                    currentContext.hasMore = false;
-                }
-
+                const data = await fetchAPI(buildSearchEndpoint(searchType, query, currentPage));
+                list = extractList(data);
             } else if (currentContext.type === 'artist') {
-                endpoint = `/artists/${currentContext.id}/songs?page=${currentContext.currentPage}&sortBy=popularity&sortOrder=desc`;
-                data = await fetchAPI(endpoint);
+                const data = await fetchAPI(`/artists/${currentContext.id}/songs?page=${currentContext.currentPage}`);
+                list = extractList(data);
+            }
 
-                if (data?.data?.songs && data.data.songs.length > 0) {
-                    let newSongs = [];
-
-                    if (!currentContext.loadedIds) {
-                        currentContext.loadedIds = new Set(currentContext.songs.map(s => s.id));
-                    }
-
-                    data.data.songs.forEach(song => {
-                        if (!currentContext.loadedIds.has(song.id)) {
-                            newSongs.push(song);
-                            currentContext.loadedIds.add(song.id);
-                        }
-                    });
-
-                    if (newSongs.length === 0) {
-                        currentContext.isLoading = false;
-                        btn.disabled = false;
-                        btnText.textContent = 'Load More';
-                        setTimeout(() => loadMore(), 100);
-                        return;
-                    }
-
-                    currentContext.songs = [...currentContext.songs, ...newSongs];
-                    displaySongs(newSongs, 'searchResultsGrid', true);
-
-                    const infoMsg = currentContext.totalSongs > 0
-                        ? `Loaded ${currentContext.songs.length} of ${currentContext.totalSongs} songs` 
-                        : `Loaded ${currentContext.songs.length} songs`;
-
-                    document.getElementById('searchResultsInfo').innerHTML = `
-                        <span><i class="fas fa-music"></i> ${infoMsg}</span>
-                    `;
-
-                    currentContext.hasMore = data.data.songs.length >= 10;
-                    showToast(`+${newSongs.length} songs`, 'success');
-                } else {
-                    currentContext.hasMore = false;
+            // Only keep items we haven't loaded yet
+            const newItems = [];
+            list.forEach(item => {
+                if (!currentContext.loadedIds.has(item.id)) {
+                    newItems.push(item);
+                    currentContext.loadedIds.add(item.id);
                 }
+            });
+
+            if (newItems.length === 0) {
+                currentContext.hasMore = false;
+            } else {
+                if (currentContext.type === 'artist' || currentContext.searchType === 'songs') {
+                    currentContext.songs = [...currentContext.songs, ...newItems];
+                    displaySongs(newItems, 'searchResultsGrid', true);
+                } else if (currentContext.searchType === 'albums') {
+                    currentContext.albums = [...currentContext.albums, ...newItems];
+                    displayAlbums(newItems, 'searchResultsGrid', true);
+                } else if (currentContext.searchType === 'playlists') {
+                    currentContext.playlists = [...currentContext.playlists, ...newItems];
+                    displayPlaylists(newItems, 'searchResultsGrid', true);
+                } else if (currentContext.searchType === 'artists') {
+                    currentContext.artists = [...currentContext.artists, ...newItems];
+                    displayArtists(newItems, 'searchResultsGrid', true);
+                }
+
+                const currentCount = document.querySelectorAll('#searchResultsGrid .card').length;
+                document.getElementById('searchResultsInfo').innerHTML = `
+                    <span><i class="fas fa-check-circle"></i> Showing ${currentCount} results</span>
+                `;
+
+                currentContext.hasMore = list.length >= (currentContext.type === 'artist' ? 10 : 20);
+                showToast(`+${newItems.length} loaded`, 'success');
             }
 
             if (!currentContext.hasMore) {
                 document.getElementById('loadMoreContainer').classList.remove('active');
-                const totalLoaded = currentContext.songs?.length || 
-                                   currentContext.albums?.length || 
-                                   currentContext.playlists?.length || 
-                                   currentContext.artists?.length || 
-                                   document.querySelectorAll('#searchResultsGrid .card').length;
+                const totalLoaded = document.querySelectorAll('#searchResultsGrid .card').length;
                 showToast(`All loaded! Total: ${totalLoaded}`, 'success');
             }
 
@@ -4276,6 +4111,7 @@
             currentContext.isLoading = false;
         }
 
+        // ========== DISPLAY FUNCTIONS ==========
         function displaySongs(songs, gridId, append = false) {
             const grid = document.getElementById(gridId);
             if (!grid) return;
@@ -4286,15 +4122,15 @@
             }
 
             const songsHTML = songs.map((song, index) => {
-                const imageUrl = song.image?.[2]?.url || song.image?.[1]?.url || 'https://via.placeholder.com/200';
-                const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+                const imageUrl = getImageUrl(song, 2);
+                const artistName = getArtistNames(song);
                 const isFav = favorites.find(f => f.id === song.id);
                 const songIndex = append ? (currentContext.songs.length - songs.length + index) : index;
 
                 return `
                     <div class="card">
                         <div class="card-img-container">
-                            <img src="${imageUrl}" class="card-img" loading="lazy" onerror="this.src='https://via.placeholder.com/200'">
+                            <img src="${imageUrl}" class="card-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
                             ${song.duration ? `<div class="card-badge"><i class="fas fa-clock"></i> ${formatTime(song.duration)}</div>` : ''}
                             <div class="play-overlay" onclick="event.stopPropagation(); playSongByIndex(${songIndex})">
                                 <i class="fas fa-play"></i>
@@ -4327,9 +4163,7 @@
             const grid = document.getElementById(gridId);
             if (!grid) return;
 
-            if (grid.classList.contains('skeleton-grid')) {
-                grid.className = 'grid';
-            }
+            if (grid.classList.contains('skeleton-grid')) grid.className = 'grid';
 
             if (!playlists?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-list-music"></i><p>No playlists found</p></div>';
@@ -4337,12 +4171,12 @@
             }
 
             const playlistsHTML = playlists.map(playlist => {
-                const imageUrl = playlist.image?.[2]?.url || playlist.image?.[1]?.url || 'https://via.placeholder.com/200';
+                const imageUrl = getImageUrl(playlist, 2);
 
                 return `
-                    <div class="card" onclick="loadOnlinePlaylist('${playlist.id}', '${encodeURIComponent(playlist.url || '')}', '${escapeHtml(playlist.name)}')">
+                    <div class="card" onclick="loadOnlinePlaylist('${attrStr(playlist.id)}', '${encodeURIComponent(playlist.url || '')}', '${attrStr(playlist.name)}')">
                         <div class="card-img-container">
-                            <img src="${imageUrl}" class="card-img" loading="lazy" alt="${escapeHtml(playlist.name || 'Playlist cover')}">
+                            <img src="${imageUrl}" class="card-img" loading="lazy" alt="${escapeHtml(playlist.name || 'Playlist cover')}" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
                             ${playlist.songCount ? `<div class="card-badge"><i class="fas fa-music"></i> ${playlist.songCount}</div>` : ''}
                             <div class="play-overlay">
                                 <i class="fas fa-play"></i>
@@ -4361,9 +4195,7 @@
             const grid = document.getElementById(gridId);
             if (!grid) return;
 
-            if (grid.classList.contains('skeleton-grid')) {
-                grid.className = 'grid';
-            }
+            if (grid.classList.contains('skeleton-grid')) grid.className = 'grid';
 
             if (!albums?.length) {
                 if (!append) grid.innerHTML = '<div class="empty-state"><i class="fas fa-compact-disc"></i><p>No albums found</p></div>';
@@ -4371,13 +4203,13 @@
             }
 
             const albumsHTML = albums.map(album => {
-                const imageUrl = album.image?.[2]?.url || album.image?.[1]?.url || 'https://via.placeholder.com/200';
-                const artistName = album.artists?.primary?.map(a => a.name).join(', ') || 'Various Artists';
+                const imageUrl = getImageUrl(album, 2);
+                const artistName = getArtistNames(album, 'Various Artists');
 
                 return `
-                    <div class="card" onclick="loadAlbum('${album.id}', '${escapeHtml(album.name)}')">
+                    <div class="card" onclick="loadAlbum('${attrStr(album.id)}', '${attrStr(album.name)}')">
                         <div class="card-img-container">
-                            <img src="${imageUrl}" class="card-img" loading="lazy" alt="${escapeHtml(album.name || 'Album cover')}">
+                            <img src="${imageUrl}" class="card-img" loading="lazy" alt="${escapeHtml(album.name || 'Album cover')}" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
                             ${album.songCount ? `<div class="card-badge"><i class="fas fa-music"></i> ${album.songCount}</div>` : ''}
                             <div class="play-overlay">
                                 <i class="fas fa-play"></i>
@@ -4402,12 +4234,12 @@
             }
 
             const artistsHTML = artists.map(artist => {
-                const imageUrl = artist.image?.[2]?.url || artist.image?.[1]?.url || 'https://via.placeholder.com/200';
+                const imageUrl = getImageUrl(artist, 2);
 
                 return `
-                    <div class="card artist-card" onclick="loadArtistSongs('${artist.id}', '${escapeHtml(artist.name)}')">
+                    <div class="card artist-card" onclick="loadArtistSongs('${attrStr(artist.id)}', '${attrStr(artist.name)}')">
                         <div class="card-img-container">
-                            <img src="${imageUrl}" class="card-img" loading="lazy">
+                            <img src="${imageUrl}" class="card-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
                             <div class="play-overlay">
                                 <i class="fas fa-play"></i>
                             </div>
@@ -4431,7 +4263,8 @@
             }
 
             const resultsHTML = results.map(item => {
-                const imageUrl = item.image?.[2]?.url || item.image?.[1]?.url || 'https://via.placeholder.com/200';
+                const imageUrl = getImageUrl(item, 2);
+                const imgTag = `<img src="${imageUrl}" class="card-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">`;
 
                 if (item.type === 'song') {
                     const songIndex = currentContext.songs.length;
@@ -4440,20 +4273,20 @@
                     return `
                         <div class="card">
                             <div class="card-img-container">
-                                <img src="${imageUrl}" class="card-img" loading="lazy">
+                                ${imgTag}
                                 <div class="play-overlay" onclick="event.stopPropagation(); playSongByIndex(${songIndex})">
                                     <i class="fas fa-play"></i>
                                 </div>
                             </div>
                             <div class="card-title">${item.name}</div>
-                            <div class="card-subtitle">${item.artists?.primary?.map(a => a.name).join(', ') || 'Unknown'}</div>
+                            <div class="card-subtitle">${getArtistNames(item, 'Unknown')}</div>
                         </div>
                     `;
                 } else if (item.type === 'album') {
                     return `
-                        <div class="card" onclick="loadAlbum('${item.id}', '${escapeHtml(item.name)}')">
+                        <div class="card" onclick="loadAlbum('${attrStr(item.id)}', '${attrStr(item.name)}')">
                             <div class="card-img-container">
-                                <img src="${imageUrl}" class="card-img" loading="lazy">
+                                ${imgTag}
                                 <div class="play-overlay"><i class="fas fa-play"></i></div>
                             </div>
                             <div class="card-title">${item.name}</div>
@@ -4462,9 +4295,9 @@
                     `;
                 } else if (item.type === 'playlist') {
                     return `
-                        <div class="card" onclick="loadOnlinePlaylist('${item.id}', '${encodeURIComponent(item.url || '')}', '${escapeHtml(item.name)}')">
+                        <div class="card" onclick="loadOnlinePlaylist('${attrStr(item.id)}', '${encodeURIComponent(item.url || '')}', '${attrStr(item.name)}')">
                             <div class="card-img-container">
-                                <img src="${imageUrl}" class="card-img" loading="lazy">
+                                ${imgTag}
                                 <div class="play-overlay"><i class="fas fa-play"></i></div>
                             </div>
                             <div class="card-title">${item.name}</div>
@@ -4473,9 +4306,9 @@
                     `;
                 } else if (item.type === 'artist') {
                     return `
-                        <div class="card artist-card" onclick="loadArtistSongs('${item.id}', '${escapeHtml(item.name)}')">
+                        <div class="card artist-card" onclick="loadArtistSongs('${attrStr(item.id)}', '${attrStr(item.name)}')">
                             <div class="card-img-container">
-                                <img src="${imageUrl}" class="card-img" loading="lazy">
+                                ${imgTag}
                                 <div class="play-overlay"><i class="fas fa-play"></i></div>
                             </div>
                             <div class="card-title">${item.name}</div>
@@ -4490,27 +4323,19 @@
         }
 
         function playSongByIndex(index) {
-            if (currentContext.songs[index]) {
-                playSongFromData(currentContext.songs[index], index);
-            }
+            if (currentContext.songs[index]) playSongFromData(currentContext.songs[index], index);
         }
 
         function addSongToQueue(index) {
-            if (currentContext.songs[index]) {
-                addToQueue(currentContext.songs[index]);
-            }
+            if (currentContext.songs[index]) addToQueue(currentContext.songs[index]);
         }
 
         function toggleFavoriteSongByIndex(index) {
-            if (currentContext.songs[index]) {
-                toggleFavoriteSong(currentContext.songs[index]);
-            }
+            if (currentContext.songs[index]) toggleFavoriteSong(currentContext.songs[index]);
         }
 
         function downloadSongByIndex(index) {
-            if (currentContext.songs[index]) {
-                downloadSong(currentContext.songs[index]);
-            }
+            if (currentContext.songs[index]) downloadSong(currentContext.songs[index]);
         }
 
         function addSongToPlaylistByIndex(index) {
@@ -4521,44 +4346,48 @@
             }
         }
 
-            async function loadAlbum(albumId, albumName) {
-                // ✅ Scroll to top
-                scrollToTop(false);
-
-                showLoading('searchResultsGrid');
-                switchTab('search-results');
-                document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-compact-disc"></i> ${albumName}`;
-                document.getElementById('loadMoreContainer').classList.remove('active');
-
-                hideYouTubeSection();
-
-                currentContext = {
-                    type: 'album',
-                    id: albumId,
-                    name: albumName,
-                    songs: [],
-                    currentPage: 0,
-                    totalSongs: 0,
-                    hasMore: false,
-                    isLoading: false
-                };
-
-                const data = await fetchAPI(`/albums?id=${albumId}`);
-                if (data?.data?.songs) {
-                    currentContext.songs = data.data.songs;
-                    currentContext.totalSongs = data.data.songs.length;
-                    displaySongs(data.data.songs, 'searchResultsGrid');
-                    document.getElementById('searchResultsInfo').innerHTML = `<span><i class="fas fa-music"></i> ${data.data.songs.length} songs</span>`;
-                }
-            }
-
-            async function loadOnlinePlaylist(playlistId, playlistUrl, playlistName) {
-            // ✅ Scroll to top
+        // ========== ALBUM / PLAYLIST / ARTIST ==========
+        async function loadAlbum(albumId, albumName) {
             scrollToTop(false);
 
             showLoading('searchResultsGrid');
             switchTab('search-results');
-            document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-list-music"></i> ${playlistName}`;
+            document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-compact-disc"></i> ${escapeHtml(albumName)}`;
+            document.getElementById('loadMoreContainer').classList.remove('active');
+
+            hideYouTubeSection();
+
+            currentContext = {
+                type: 'album',
+                id: albumId,
+                name: albumName,
+                songs: [],
+                currentPage: 0,
+                totalSongs: 0,
+                hasMore: false,
+                isLoading: false,
+                loadedIds: new Set()
+            };
+
+            const data = await fetchAPI(`/albums?id=${albumId}`);
+            if (data?.data?.songs?.length) {
+                currentContext.songs = data.data.songs;
+                currentContext.totalSongs = data.data.songs.length;
+                displaySongs(data.data.songs, 'searchResultsGrid');
+                document.getElementById('searchResultsInfo').innerHTML = `<span><i class="fas fa-music"></i> ${data.data.songs.length} songs</span>`;
+            } else {
+                document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found in this album</p></div>';
+                document.getElementById('searchResultsInfo').innerHTML = '';
+            }
+        }
+
+        // Playlist: only id is needed (no page / limit)
+        async function loadOnlinePlaylist(playlistId, playlistUrl, playlistName) {
+            scrollToTop(false);
+
+            showLoading('searchResultsGrid');
+            switchTab('search-results');
+            document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-list-music"></i> ${escapeHtml(playlistName)}`;
             document.getElementById('loadMoreContainer').classList.remove('active');
 
             hideYouTubeSection();
@@ -4573,83 +4402,34 @@
                 totalSongs: 0,
                 hasMore: false,
                 isLoading: false,
-                loadedIds: new Set(),
-                useBackupAPI: false
+                loadedIds: new Set()
             };
 
-            const endpoint = `/playlists?id=${playlistId}&page=0&limit=20`;
-            const data = await fetchAPI(endpoint);
+            const data = await fetchAPI(`/playlists?id=${playlistId}`);
 
-            if (data?.data?.songs && data.data.songs.length > 0) {
+            if (data?.data?.songs?.length) {
                 currentContext.songs = data.data.songs;
                 data.data.songs.forEach(s => currentContext.loadedIds.add(s.id));
-                currentContext.hasMore = data.data.songs.length === 20;
-                currentContext.totalSongs = data.data.songCount || '?';
+                currentContext.totalSongs = data.data.songs.length;
 
                 displaySongs(data.data.songs, 'searchResultsGrid');
 
-                const infoMsg = currentContext.totalSongs !== '?' 
-                    ? `Showing ${data.data.songs.length} songs (Total: ${currentContext.totalSongs})` 
-                    : `Loaded ${data.data.songs.length} songs`;
-
                 document.getElementById('searchResultsInfo').innerHTML = `
-                    <span><i class="fas fa-music"></i> ${infoMsg}</span>
+                    <span><i class="fas fa-music"></i> ${data.data.songs.length} songs</span>
                 `;
-
-                if (currentContext.hasMore) {
-                    document.getElementById('loadMoreContainer').classList.add('active');
-                }
             } else {
-                try {
-                    const backupEndpoint = `https://jiosaavn-api-codyandersan.vercel.app/playlists?id=${playlistId}`;
-                    const backupResponse = await fetch(backupEndpoint);
-                    const backupData = await backupResponse.json();
-
-                    let songs = null;
-
-                    if (backupData?.data?.songs && backupData.data.songs.length > 0) {
-                        songs = backupData.data.songs;
-                    } else if (backupData?.songs && backupData.songs.length > 0) {
-                        songs = backupData.songs;
-                    } else if (Array.isArray(backupData) && backupData.length > 0) {
-                        songs = backupData;
-                    }
-
-                    if (songs && songs.length > 0) {
-                        const normalizedSongs = normalizeBackupAPIResponse(songs);
-
-                        currentContext.useBackupAPI = true;
-                        currentContext.songs = normalizedSongs;
-                        normalizedSongs.forEach(s => currentContext.loadedIds.add(s.id));
-                        currentContext.hasMore = false;
-                        currentContext.totalSongs = normalizedSongs.length;
-
-                        displaySongs(normalizedSongs, 'searchResultsGrid');
-
-                        document.getElementById('searchResultsInfo').innerHTML = `
-                            <span><i class="fas fa-music"></i> ${normalizedSongs.length} songs loaded</span>
-                            <span style="margin-left: 1rem; color: var(--accent-secondary);"><i class="fas fa-info-circle"></i> Using alternate source</span>
-                        `;
-
-                        showToast(`✓ Loaded ${normalizedSongs.length} songs from backup`, 'success');
-                    } else {
-                        document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found in this playlist</p></div>';
-                        document.getElementById('searchResultsInfo').innerHTML = '';
-                    }
-                } catch (error) {
-                    document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load playlist</p></div>';
-                    document.getElementById('searchResultsInfo').innerHTML = '';
-                }
+                document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found in this playlist</p></div>';
+                document.getElementById('searchResultsInfo').innerHTML = '';
             }
         }
 
-            async function loadArtistSongs(artistId, artistName) {
-            // ✅ Scroll to top
+        // Artist songs: pages start at 1, no sortBy / sortOrder / limit
+        async function loadArtistSongs(artistId, artistName) {
             scrollToTop(false);
 
             showLoading('searchResultsGrid');
             switchTab('search-results');
-            document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-user"></i> ${artistName}`;
+            document.getElementById('searchResultsTitle').innerHTML = `<i class="fas fa-user"></i> ${escapeHtml(artistName)}`;
             document.getElementById('loadMoreContainer').classList.remove('active');
 
             hideYouTubeSection();
@@ -4659,27 +4439,27 @@
                 id: artistId,
                 name: artistName,
                 songs: [],
-                currentPage: 0,
+                currentPage: 1,
                 totalSongs: 0,
                 hasMore: false,
                 isLoading: false,
                 loadedIds: new Set()
             };
 
-            const endpoint = `/artists/${artistId}/songs?page=0&sortBy=popularity&sortOrder=desc`;
-            const data = await fetchAPI(endpoint);
+            const data = await fetchAPI(`/artists/${artistId}/songs?page=1`);
+            const songs = extractList(data);
 
-            if (data?.data?.songs && data.data.songs.length > 0) {
-                currentContext.songs = data.data.songs;
-                data.data.songs.forEach(s => currentContext.loadedIds.add(s.id));
-                currentContext.totalSongs = data.data.total || data.data.songs.length;
-                currentContext.hasMore = data.data.songs.length >= 10;
+            if (songs.length > 0) {
+                currentContext.songs = songs;
+                songs.forEach(s => currentContext.loadedIds.add(s.id));
+                currentContext.totalSongs = data.data.total || songs.length;
+                currentContext.hasMore = songs.length >= 10;
 
-                displaySongs(data.data.songs, 'searchResultsGrid');
+                displaySongs(songs, 'searchResultsGrid');
 
-                const infoMsg = currentContext.totalSongs > 0
-                    ? `Showing ${data.data.songs.length} of ${currentContext.totalSongs} songs` 
-                    : `Loaded ${data.data.songs.length} songs`;
+                const infoMsg = currentContext.totalSongs > songs.length
+                    ? `Showing ${songs.length} of ${currentContext.totalSongs} songs`
+                    : `Loaded ${songs.length} songs`;
 
                 document.getElementById('searchResultsInfo').innerHTML = `
                     <span><i class="fas fa-music"></i> ${infoMsg}</span>
@@ -4690,14 +4470,20 @@
                 }
             } else {
                 document.getElementById('searchResultsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs found</p></div>';
+                document.getElementById('searchResultsInfo').innerHTML = '';
             }
         }
 
+        // ========== PLAYBACK ==========
         async function playSongFromData(song, songIndex = -1) {
             if (!song.downloadUrl?.length) {
-                const songData = await fetchAPI(`/api/songs?id=${song.id}`);
-                if (songData?.data?.[0]) {
-                    song = songData.data[0];
+                const songData = await fetchAPI(`/songs?id=${song.id}`);
+                const fetched = Array.isArray(songData?.data)
+                    ? songData.data[0]
+                    : (songData?.data?.songs?.[0] || songData?.data?.results?.[0]);
+
+                if (fetched) {
+                    song = fetched;
                     if (songIndex >= 0 && currentContext.songs[songIndex]) {
                         currentContext.songs[songIndex] = song;
                     }
@@ -4706,28 +4492,25 @@
             playSong(song, songIndex);
         }
 
+        function pickDownloadUrl(song, quality) {
+            const list = song.downloadUrl || [];
+            if (!list.length) return null;
+
+            // Order from API: 12kbps, 48kbps, 96kbps, 160kbps, 320kbps
+            const byQuality = { high: 4, medium: 3, low: 2 };
+            const idx = byQuality[quality];
+            if (idx !== undefined && list[idx]?.url) return list[idx].url;
+
+            for (let i = list.length - 1; i >= 0; i--) {
+                if (list[i]?.url) return list[i].url;
+            }
+            return null;
+        }
+
         function playSong(song, songIndex = -1) {
             currentSong = song;
 
-            const quality = settings.audioQuality;
-            let downloadUrl = null;
-
-            if (song.downloadUrl && song.downloadUrl.length > 0) {
-                if (quality === 'high' && song.downloadUrl[4]?.url) {
-                    downloadUrl = song.downloadUrl[4].url;
-                } else if (quality === 'medium' && song.downloadUrl[3]?.url) {
-                    downloadUrl = song.downloadUrl[3].url;
-                } else if (quality === 'low' && song.downloadUrl[2]?.url) {
-                    downloadUrl = song.downloadUrl[2].url;
-                } else {
-                    for (let i = song.downloadUrl.length - 1; i >= 0; i--) {
-                        if (song.downloadUrl[i]?.url) {
-                            downloadUrl = song.downloadUrl[i].url;
-                            break;
-                        }
-                    }
-                }
-            }
+            const downloadUrl = pickDownloadUrl(song, settings.audioQuality);
 
             if (downloadUrl) {
                 audio.src = downloadUrl;
@@ -4761,12 +4544,12 @@
                 queue = [...currentContext.songs];
                 currentIndex = songIndex >= 0 ? songIndex : queue.findIndex(s => s.id === song.id);
             } else {
-                if (!queue.find(s => s.id === song.id)) {
-                    queue.push(song);
-                }
+                if (!queue.find(s => s.id === song.id)) queue.push(song);
                 currentIndex = queue.findIndex(s => s.id === song.id);
             }
 
+            updatePlayerUI();
+            updateFullscreenPlayerUI();
             updateQueueDisplay();
             updateBadges();
             updateStats();
@@ -4803,13 +4586,10 @@
 
         function updatePlayPauseButtons() {
             const icon = isPlaying ? 'pause' : 'play';
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            const playPauseBtnMini = document.getElementById('playPauseBtnMini');
-            const fullscreenBtn = document.getElementById('fullscreenPlayPauseBtn');
-
-            if (playPauseBtn) playPauseBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
-            if (playPauseBtnMini) playPauseBtnMini.innerHTML = `<i class="fas fa-${icon}"></i>`;
-            if (fullscreenBtn) fullscreenBtn.innerHTML = `<i class="fas fa-${icon}"></i>`;
+            ['playPauseBtn', 'playPauseBtnMini', 'fullscreenPlayPauseBtn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.innerHTML = `<i class="fas fa-${icon}"></i>`;
+            });
         }
 
         function previousSong() {
@@ -4833,12 +4613,13 @@
             if (repeatMode === 'all' && currentIndex === queue.length - 1) {
                 currentIndex = 0;
                 playSongFromData(queue[currentIndex], currentIndex);
+            } else if (isShuffleOn && queue.length > 1) {
+                let next = currentIndex;
+                while (next === currentIndex) next = Math.floor(Math.random() * queue.length);
+                currentIndex = next;
+                playSongFromData(queue[currentIndex], currentIndex);
             } else if (currentIndex < queue.length - 1) {
-                if (isShuffleOn) {
-                    currentIndex = Math.floor(Math.random() * queue.length);
-                } else {
-                    currentIndex++;
-                }
+                currentIndex++;
                 playSongFromData(queue[currentIndex], currentIndex);
             } else {
                 showToast('Last song in queue', 'info');
@@ -4850,6 +4631,7 @@
             updateQueueDisplay();
         }
 
+        // ========== QUEUE ==========
         function addToQueue(song) {
             if (!queue.find(s => s.id === song.id)) {
                 queue.push(song);
@@ -4871,6 +4653,24 @@
             }
         }
 
+        function queueItemHTML(song, index) {
+            const imageUrl = getImageUrl(song, 1);
+            const artistName = getArtistNames(song);
+
+            return `
+                <div class="queue-item ${index === currentIndex ? 'active' : ''}" onclick="playFromQueue(${index})">
+                    <img src="${imageUrl}" class="queue-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
+                    <div class="queue-info">
+                        <div class="title">${song.name || 'Unknown Song'}</div>
+                        <div class="artist">${artistName}</div>
+                    </div>
+                    <button class="icon-btn" onclick="removeFromQueue(${index}, event)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }
+
         function updateQueueDisplay() {
             const queueList = document.getElementById('queueList');
             const queueCount = document.getElementById('queueCount');
@@ -4884,23 +4684,7 @@
             }
 
             if (queueList) {
-                queueList.innerHTML = queue.map((song, index) => {
-                    const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
-                    const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-
-                    return `
-                        <div class="queue-item ${index === currentIndex ? 'active' : ''}" onclick="playFromQueue(${index})">
-                            <img src="${imageUrl}" class="queue-img" loading="lazy">
-                            <div class="queue-info">
-                                <div class="title">${song.name || 'Unknown Song'}</div>
-                                <div class="artist">${artistName}</div>
-                            </div>
-                            <button class="icon-btn" onclick="removeFromQueue(${index}, event)">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    `;
-                }).join('');
+                queueList.innerHTML = queue.map((song, index) => queueItemHTML(song, index)).join('');
             }
 
             updateFullscreenQueue();
@@ -4925,48 +4709,29 @@
             const btn = document.getElementById('shuffleBtn');
             const fullscreenBtn = document.getElementById('fullscreenShuffleBtn');
 
-            if (btn) btn.classList.toggle('active');
-            if (fullscreenBtn) fullscreenBtn.classList.toggle('active');
+            if (btn) btn.classList.toggle('active', isShuffleOn);
+            if (fullscreenBtn) fullscreenBtn.classList.toggle('active', isShuffleOn);
 
             showToast(isShuffleOn ? 'Shuffle on' : 'Shuffle off', 'info');
         }
 
         function toggleRepeat() {
             const modes = ['off', 'all', 'one'];
-            const currentModeIndex = modes.indexOf(repeatMode);
-            repeatMode = modes[(currentModeIndex + 1) % modes.length];
+            repeatMode = modes[(modes.indexOf(repeatMode) + 1) % modes.length];
 
             const btn = document.getElementById('repeatBtn');
             const fullscreenBtn = document.getElementById('fullscreenRepeatBtn');
 
-            if (repeatMode === 'off') {
-                if (btn) {
-                    btn.classList.remove('active');
-                    btn.innerHTML = '<i class="fas fa-redo"></i>';
-                }
-                if (fullscreenBtn) {
-                    fullscreenBtn.classList.remove('active');
-                    fullscreenBtn.innerHTML = '<i class="fas fa-redo"></i>';
-                }
-            } else if (repeatMode === 'all') {
-                if (btn) {
-                    btn.classList.add('active');
-                    btn.innerHTML = '<i class="fas fa-redo"></i>';
-                }
-                if (fullscreenBtn) {
-                    fullscreenBtn.classList.add('active');
-                    fullscreenBtn.innerHTML = '<i class="fas fa-redo"></i>';
-                }
-            } else {
-                if (btn) {
-                    btn.classList.add('active');
-                    btn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 8px; right: 8px;">1</span>';
-                }
-                if (fullscreenBtn) {
-                    fullscreenBtn.classList.add('active');
-                    fullscreenBtn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 12px; right: 12px;">1</span>';
-                }
-            }
+            const apply = (el, bottom) => {
+                if (!el) return;
+                el.classList.toggle('active', repeatMode !== 'off');
+                el.innerHTML = repeatMode === 'one'
+                    ? `<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: ${bottom}px; right: ${bottom}px;">1</span>`
+                    : '<i class="fas fa-redo"></i>';
+            };
+
+            apply(btn, 8);
+            apply(fullscreenBtn, 12);
 
             showToast(`Repeat: ${repeatMode}`, 'info');
         }
@@ -4980,83 +4745,65 @@
         }
 
         function updatePlayerUI(isLoading = false) {
-            if (currentSong) {
-                const imageUrl = currentSong.image?.[2]?.url || currentSong.image?.[1]?.url || 'https://via.placeholder.com/400';
-                const artistName = currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+            if (!currentSong) return;
 
-                const playerImg = document.getElementById('playerImgMini');
-                const playerTitle = document.getElementById('playerTitleMini');
-                const playerArtist = document.getElementById('playerArtistMini');
+            const imageUrl = getImageUrl(currentSong, 2);
+            const artistName = getArtistNames(currentSong);
 
-                if (playerImg) {
-                    playerImg.src = imageUrl;
-                    if (isLoading) {
-                        playerImg.classList.add('loading');
-                    } else {
-                        playerImg.classList.remove('loading');
-                    }
-                }
+            const playerImg = document.getElementById('playerImgMini');
+            const playerTitle = document.getElementById('playerTitleMini');
+            const playerArtist = document.getElementById('playerArtistMini');
 
-                if (playerTitle) {
-                    playerTitle.textContent = currentSong.name || 'Unknown Song';
-                    if (isLoading) {
-                        playerTitle.parentElement.classList.add('loading');
-                    } else {
-                        playerTitle.parentElement.classList.remove('loading');
-                    }
-                }
-
-                if (playerArtist) playerArtist.textContent = artistName;
-
-                updateFavoriteIcon();
+            if (playerImg) {
+                playerImg.src = imageUrl;
+                playerImg.classList.toggle('loading', isLoading);
             }
+
+            if (playerTitle) {
+                playerTitle.textContent = currentSong.name || 'Unknown Song';
+                if (playerTitle.parentElement) playerTitle.parentElement.classList.toggle('loading', isLoading);
+            }
+
+            if (playerArtist) playerArtist.textContent = artistName;
+
+            updateFavoriteIcon();
         }
 
         function updateFullscreenPlayerUI(isLoading = false) {
-            if (currentSong) {
-                const imageUrl = currentSong.image?.[2]?.url || currentSong.image?.[1]?.url || 'https://via.placeholder.com/400';
-                const artistName = currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+            if (!currentSong) return;
 
-                const fullscreenImg = document.getElementById('fullscreenImg');
-                const fullscreenTitle = document.getElementById('fullscreenTitle');
-                const fullscreenArtist = document.getElementById('fullscreenArtist');
+            const imageUrl = getImageUrl(currentSong, 2);
+            const artistName = getArtistNames(currentSong);
 
-                if (fullscreenImg) {
-                    fullscreenImg.src = imageUrl;
-                    if (isLoading) {
-                        fullscreenImg.classList.add('loading');
-                    } else {
-                        fullscreenImg.classList.remove('loading');
-                    }
-                }
+            const fullscreenImg = document.getElementById('fullscreenImg');
+            const fullscreenTitle = document.getElementById('fullscreenTitle');
+            const fullscreenArtist = document.getElementById('fullscreenArtist');
 
-                if (fullscreenTitle) fullscreenTitle.textContent = currentSong.name || 'Unknown Song';
-                if (fullscreenArtist) fullscreenArtist.textContent = artistName;
+            if (fullscreenImg) {
+                fullscreenImg.src = imageUrl;
+                fullscreenImg.classList.toggle('loading', isLoading);
+            }
 
-                const isFav = favorites.find(f => f.id === currentSong.id);
-                const fullscreenFavIcon = document.getElementById('fullscreenFavoriteIcon');
-                if (fullscreenFavIcon) {
-                    fullscreenFavIcon.className = isFav ? 'fas fa-heart' : 'far fa-heart';
-                    fullscreenFavIcon.style.color = isFav ? 'var(--accent-primary)' : '';
-                }
+            if (fullscreenTitle) fullscreenTitle.textContent = currentSong.name || 'Unknown Song';
+            if (fullscreenArtist) fullscreenArtist.textContent = artistName;
 
-                const shuffleBtn = document.getElementById('fullscreenShuffleBtn');
-                const repeatBtn = document.getElementById('fullscreenRepeatBtn');
+            const isFav = favorites.find(f => f.id === currentSong.id);
+            const fullscreenFavIcon = document.getElementById('fullscreenFavoriteIcon');
+            if (fullscreenFavIcon) {
+                fullscreenFavIcon.className = isFav ? 'fas fa-heart' : 'far fa-heart';
+                fullscreenFavIcon.style.color = isFav ? 'var(--accent-primary)' : '';
+            }
 
-                if (isShuffleOn && shuffleBtn) shuffleBtn.classList.add('active');
-                else if (shuffleBtn) shuffleBtn.classList.remove('active');
+            const shuffleBtn = document.getElementById('fullscreenShuffleBtn');
+            const repeatBtn = document.getElementById('fullscreenRepeatBtn');
 
-                if (repeatMode !== 'off' && repeatBtn) {
-                    repeatBtn.classList.add('active');
-                    if (repeatMode === 'one') {
-                        repeatBtn.innerHTML = '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 12px; right: 12px;">1</span>';
-                    } else {
-                        repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
-                    }
-                } else if (repeatBtn) {
-                    repeatBtn.classList.remove('active');
-                    repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
-                }
+            if (shuffleBtn) shuffleBtn.classList.toggle('active', isShuffleOn);
+
+            if (repeatBtn) {
+                repeatBtn.classList.toggle('active', repeatMode !== 'off');
+                repeatBtn.innerHTML = repeatMode === 'one'
+                    ? '<i class="fas fa-redo"></i><span style="font-size: 0.6rem; position: absolute; bottom: 12px; right: 12px;">1</span>'
+                    : '<i class="fas fa-redo"></i>';
             }
         }
 
@@ -5077,23 +4824,7 @@
                 return;
             }
 
-            queueList.innerHTML = queue.map((song, index) => {
-                const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
-                const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-
-                return `
-                    <div class="queue-item ${index === currentIndex ? 'active' : ''}" onclick="playFromQueue(${index})">
-                        <img src="${imageUrl}" class="queue-img" loading="lazy">
-                        <div class="queue-info">
-                            <div class="title">${song.name || 'Unknown Song'}</div>
-                            <div class="artist">${artistName}</div>
-                        </div>
-                        <button class="icon-btn" onclick="removeFromQueue(${index}, event)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `;
-            }).join('');
+            queueList.innerHTML = queue.map((song, index) => queueItemHTML(song, index)).join('');
         }
 
         function seekSongFullscreen(event) {
@@ -5131,19 +4862,28 @@
 
         function setVolume(event) {
             const rect = event.currentTarget.getBoundingClientRect();
-            const percent = (event.clientX - rect.left) / rect.width;
+            const percent = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
             audio.volume = percent;
             const volumeFilled = document.getElementById('volumeFilled');
             if (volumeFilled) volumeFilled.style.width = (percent * 100) + '%';
         }
 
+        // ========== DOWNLOAD / SHARE ==========
         function downloadSong(song) {
-            const downloadUrl = song.downloadUrl?.[4]?.url || song.downloadUrl?.[3]?.url || song.downloadUrl?.[2]?.url;
+            const downloadUrl = song.downloadUrl?.[4]?.url
+                || song.downloadUrl?.[3]?.url
+                || song.downloadUrl?.[2]?.url
+                || song.downloadUrl?.[song.downloadUrl.length - 1]?.url;
+
             if (downloadUrl) {
                 const a = document.createElement('a');
                 a.href = downloadUrl;
                 a.download = `${song.name}.mp3`;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
                 a.click();
+                a.remove();
                 showToast('Download started', 'success');
             } else {
                 showToast('Download unavailable', 'error');
@@ -5161,7 +4901,7 @@
                 return;
             }
 
-            const shareText = `🎵 ${currentSong.name} - ${currentSong.artists?.primary?.map(a => a.name).join(', ')}`;
+            const shareText = `🎵 ${currentSong.name} - ${getArtistNames(currentSong, '')}`;
 
             if (navigator.share) {
                 navigator.share({
@@ -5184,6 +4924,7 @@
             });
         }
 
+        // ========== FAVORITES ==========
         function toggleFavorite(event) {
             event.stopPropagation();
             if (!currentSong) return;
@@ -5235,23 +4976,18 @@
                 return;
             }
 
-            list.innerHTML = favorites.map(song => {
-                const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
-                const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-
-                return `
-                    <div class="queue-item" onclick="playSongFromFavorites('${song.id}')">
-                        <img src="${imageUrl}" class="queue-img" loading="lazy">
-                        <div class="queue-info">
-                            <div class="title">${song.name}</div>
-                            <div class="artist">${artistName}</div>
-                        </div>
-                        <button class="icon-btn" onclick="removeFavorite('${song.id}', event)">
-                            <i class="fas fa-times"></i>
-                        </button>
+            list.innerHTML = favorites.map(song => `
+                <div class="queue-item" onclick="playSongFromFavorites('${attrStr(song.id)}')">
+                    <img src="${getImageUrl(song, 1)}" class="queue-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
+                    <div class="queue-info">
+                        <div class="title">${song.name}</div>
+                        <div class="artist">${getArtistNames(song)}</div>
                     </div>
-                `;
-            }).join('');
+                    <button class="icon-btn" onclick="removeFavorite('${attrStr(song.id)}', event)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
         }
 
         function playSongFromFavorites(songId) {
@@ -5271,11 +5007,10 @@
             updateStats();
         }
 
+        // ========== RECENTLY PLAYED ==========
         function addToRecentlyPlayed(song) {
             const index = recentlyPlayed.findIndex(s => s.id === song.id);
-            if (index > -1) {
-                recentlyPlayed.splice(index, 1);
-            }
+            if (index > -1) recentlyPlayed.splice(index, 1);
             recentlyPlayed.unshift(song);
             recentlyPlayed = recentlyPlayed.slice(0, 50);
             localStorage.setItem('recentlyPlayed', JSON.stringify(recentlyPlayed));
@@ -5296,20 +5031,15 @@
                 return;
             }
 
-            list.innerHTML = recentlyPlayed.map(song => {
-                const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
-                const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-
-                return `
-                    <div class="queue-item" onclick="playSongFromRecent('${song.id}')">
-                        <img src="${imageUrl}" class="queue-img" loading="lazy">
-                        <div class="queue-info">
-                            <div class="title">${song.name}</div>
-                            <div class="artist">${artistName}</div>
-                        </div>
+            list.innerHTML = recentlyPlayed.map(song => `
+                <div class="queue-item" onclick="playSongFromRecent('${attrStr(song.id)}')">
+                    <img src="${getImageUrl(song, 1)}" class="queue-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
+                    <div class="queue-info">
+                        <div class="title">${song.name}</div>
+                        <div class="artist">${getArtistNames(song)}</div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `).join('');
         }
 
         function playSongFromRecent(songId) {
@@ -5320,6 +5050,7 @@
             }
         }
 
+        // ========== USER PLAYLISTS ==========
         function showCreatePlaylist() {
             closeModal('playlistModal');
             openModal('createPlaylistModal');
@@ -5405,23 +5136,24 @@
             }
 
             grid.innerHTML = playlists.map(playlist => {
-                const firstSongImage = playlist.songs[0]?.image?.[1]?.url;
+                const firstSongImage = playlist.songs[0] ? getImageUrl(playlist.songs[0], 1) : null;
+                const hasImage = firstSongImage && firstSongImage !== PLACEHOLDER_IMG;
 
                 return `
                 <div class="card">
-                    <div class="card-img-container" style="${firstSongImage ? `background-image: url(${firstSongImage}); background-size: cover;` : 'background: var(--accent-gradient);'} display: flex; align-items: center; justify-content: center;">
-                        ${!firstSongImage ? '<i class="fas fa-music" style="font-size: 2.5rem; color: white; opacity: 0.8;"></i>' : ''}
-                        <div class="play-overlay" onclick='event.stopPropagation(); playUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")})'>
+                    <div class="card-img-container" style="${hasImage ? `background-image: url('${firstSongImage}'); background-size: cover;` : 'background: var(--accent-gradient);'} display: flex; align-items: center; justify-content: center;">
+                        ${!hasImage ? '<i class="fas fa-music" style="font-size: 2.5rem; color: white; opacity: 0.8;"></i>' : ''}
+                        <div class="play-overlay" onclick="event.stopPropagation(); playUserPlaylistById('${playlist.id}')">
                             <i class="fas fa-play"></i>
                         </div>
                     </div>
                     <div class="card-title">${playlist.name}</div>
                     <div class="card-subtitle">${playlist.songs.length} songs</div>
                     <div class="card-actions">
-                        <button class="icon-btn" onclick='event.stopPropagation(); viewUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")})' title="View">
+                        <button class="icon-btn" onclick="event.stopPropagation(); viewUserPlaylistById('${playlist.id}')" title="View">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="icon-btn" onclick='event.stopPropagation(); playUserPlaylist(${JSON.stringify(playlist).replace(/'/g, "&#39;")})' title="Play">
+                        <button class="icon-btn" onclick="event.stopPropagation(); playUserPlaylistById('${playlist.id}')" title="Play">
                             <i class="fas fa-play"></i>
                         </button>
                         <button class="icon-btn" onclick="event.stopPropagation(); deletePlaylist('${playlist.id}')" title="Delete">
@@ -5430,6 +5162,16 @@
                     </div>
                 </div>
             `}).join('');
+        }
+
+        function viewUserPlaylistById(id) {
+            const playlist = playlists.find(p => p.id === id);
+            if (playlist) viewUserPlaylist(playlist);
+        }
+
+        function playUserPlaylistById(id) {
+            const playlist = playlists.find(p => p.id === id);
+            if (playlist) playUserPlaylist(playlist);
         }
 
         function viewUserPlaylist(playlist) {
@@ -5443,23 +5185,18 @@
             if (!playlist.songs.length) {
                 container.innerHTML = '<div class="empty-state"><i class="fas fa-music"></i><p>No songs in playlist</p></div>';
             } else {
-                container.innerHTML = playlist.songs.map((song, index) => {
-                    const imageUrl = song.image?.[1]?.url || 'https://via.placeholder.com/48';
-                    const artistName = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
-
-                    return `
-                        <div class="queue-item" onclick="playSongFromMyPlaylist('${playlist.id}', ${index})">
-                            <img src="${imageUrl}" class="queue-img" loading="lazy">
-                            <div class="queue-info">
-                                <div class="title">${song.name}</div>
-                                <div class="artist">${artistName}</div>
-                            </div>
-                            <button class="icon-btn" onclick="removeSongFromPlaylist('${playlist.id}', ${index}, event)">
-                                <i class="fas fa-times"></i>
-                            </button>
+                container.innerHTML = playlist.songs.map((song, index) => `
+                    <div class="queue-item" onclick="playSongFromMyPlaylist('${playlist.id}', ${index})">
+                        <img src="${getImageUrl(song, 1)}" class="queue-img" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_IMG}'">
+                        <div class="queue-info">
+                            <div class="title">${song.name}</div>
+                            <div class="artist">${getArtistNames(song)}</div>
                         </div>
-                    `;
-                }).join('');
+                        <button class="icon-btn" onclick="removeSongFromPlaylist('${playlist.id}', ${index}, event)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `).join('');
             }
 
             openModal('viewPlaylistModal');
@@ -5535,6 +5272,7 @@
             localStorage.setItem('playlists', JSON.stringify(playlists));
         }
 
+        // ========== SETTINGS ==========
         function openSettings() {
             openModal('settingsModal');
         }
@@ -5571,6 +5309,7 @@
             }
         }
 
+        // ========== FULLSCREEN PLAYER ==========
         function openFullscreenPlayer() {
             if (!currentSong) return;
             updatePlayerUI();
@@ -5580,10 +5319,7 @@
             const player = document.getElementById('fullscreenPlayer');
             if (player) {
                 player.classList.add('active');
-
-                if (window.innerWidth >= 1024) {
-                    player.classList.add('queue-open');
-                }
+                if (window.innerWidth >= 1024) player.classList.add('queue-open');
             }
 
             document.body.style.overflow = 'hidden';
@@ -5598,34 +5334,34 @@
             document.body.style.overflow = '';
         }
 
-            function switchTab(tabName) {
-                // ✅ Scroll to top when switching tabs
-                scrollToTop(false);
+        // ========== TABS / MODALS ==========
+        function switchTab(tabName) {
+            scrollToTop(false);
 
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
 
-                document.querySelectorAll('.tab').forEach(tab => {
-                    const tabText = tab.textContent.toLowerCase().trim();
-                    const targetText = tabName.toLowerCase().replace('-', ' ').trim();
-                    if (tabText.includes(targetText.split(' ')[0])) {
-                        tab.classList.add('active');
-                    }
-                });
-
-                const section = document.getElementById(tabName);
-                if (section) section.classList.add('active');
-
-                if (tabName === 'trending-playlists' && !document.getElementById('trendingPlaylistsGrid').innerHTML) {
-                    loadTrendingPlaylists();
-                } else if (tabName === 'trending-albums' && !document.getElementById('trendingAlbumsGrid').innerHTML) {
-                    loadTrendingAlbums();
-                } else if (tabName === 'queue') {
-                    updateQueueDisplay();
-                } else if (tabName === 'my-playlists') {
-                    updateMyPlaylistsDisplay();
+            document.querySelectorAll('.tab').forEach(tab => {
+                const tabText = tab.textContent.toLowerCase().trim();
+                const targetText = tabName.toLowerCase().replace('-', ' ').trim();
+                if (tabText.includes(targetText.split(' ')[0])) {
+                    tab.classList.add('active');
                 }
+            });
+
+            const section = document.getElementById(tabName);
+            if (section) section.classList.add('active');
+
+            if (tabName === 'trending-playlists' && !document.getElementById('trendingPlaylistsGrid').innerHTML) {
+                loadTrendingPlaylists();
+            } else if (tabName === 'trending-albums' && !document.getElementById('trendingAlbumsGrid').innerHTML) {
+                loadTrendingAlbums();
+            } else if (tabName === 'queue') {
+                updateQueueDisplay();
+            } else if (tabName === 'my-playlists') {
+                updateMyPlaylistsDisplay();
             }
+        }
 
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -5640,67 +5376,40 @@
         }
 
         function updateBadges() {
-            const queueBadge = document.getElementById('queueBadge');
-            const sidebarQueueBadge = document.getElementById('sidebarQueueBadge');
-
-            if (queue.length > 0) {
-                if (queueBadge) {
-                    queueBadge.textContent = queue.length;
-                    queueBadge.style.display = 'block';
+            const setBadge = (id, count) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (count > 0) {
+                    el.textContent = count;
+                    el.style.display = 'block';
+                } else {
+                    el.style.display = 'none';
                 }
-                if (sidebarQueueBadge) {
-                    sidebarQueueBadge.textContent = queue.length;
-                    sidebarQueueBadge.style.display = 'block';
-                }
-            } else {
-                if (queueBadge) queueBadge.style.display = 'none';
-                if (sidebarQueueBadge) sidebarQueueBadge.style.display = 'none';
-            }
+            };
 
-            const sidebarFavBadge = document.getElementById('sidebarFavBadge');
-            if (favorites.length > 0 && sidebarFavBadge) {
-                sidebarFavBadge.textContent = favorites.length;
-                sidebarFavBadge.style.display = 'block';
-            } else if (sidebarFavBadge) {
-                sidebarFavBadge.style.display = 'none';
-            }
-
-            const sidebarRecentBadge = document.getElementById('sidebarRecentBadge');
-            if (recentlyPlayed.length > 0 && sidebarRecentBadge) {
-                sidebarRecentBadge.textContent = recentlyPlayed.length;
-                sidebarRecentBadge.style.display = 'block';
-            } else if (sidebarRecentBadge) {
-                sidebarRecentBadge.style.display = 'none';
-            }
-
-            const sidebarPlaylistBadge = document.getElementById('sidebarPlaylistBadge');
-            if (playlists.length > 0 && sidebarPlaylistBadge) {
-                sidebarPlaylistBadge.textContent = playlists.length;
-                sidebarPlaylistBadge.style.display = 'block';
-            } else if (sidebarPlaylistBadge) {
-                sidebarPlaylistBadge.style.display = 'none';
-            }
+            setBadge('queueBadge', queue.length);
+            setBadge('sidebarQueueBadge', queue.length);
+            setBadge('sidebarFavBadge', favorites.length);
+            setBadge('sidebarRecentBadge', recentlyPlayed.length);
+            setBadge('sidebarPlaylistBadge', playlists.length);
         }
 
         function updateStats() {
-            const statSongs = document.getElementById('statSongs');
-            const statPlaylists = document.getElementById('statPlaylists');
-            const statFavorites = document.getElementById('statFavorites');
+            const set = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
 
-            if (statSongs) statSongs.textContent = recentlyPlayed.length;
-            if (statPlaylists) statPlaylists.textContent = playlists.length;
-            if (statFavorites) statFavorites.textContent = favorites.length;
-
-            const sidebarStatSongs = document.getElementById('sidebarStatSongs');
-            const sidebarStatPlaylists = document.getElementById('sidebarStatPlaylists');
-            const sidebarStatFavorites = document.getElementById('sidebarStatFavorites');
-
-            if (sidebarStatSongs) sidebarStatSongs.textContent = recentlyPlayed.length;
-            if (sidebarStatPlaylists) sidebarStatPlaylists.textContent = playlists.length;
-            if (sidebarStatFavorites) sidebarStatFavorites.textContent = favorites.length;
+            set('statSongs', recentlyPlayed.length);
+            set('statPlaylists', playlists.length);
+            set('statFavorites', favorites.length);
+            set('sidebarStatSongs', recentlyPlayed.length);
+            set('sidebarStatPlaylists', playlists.length);
+            set('sidebarStatFavorites', favorites.length);
         }
 
         function formatTime(seconds) {
+            seconds = Number(seconds);
             if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
@@ -5721,15 +5430,9 @@
 
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.innerHTML = `<i class="fas ${icons[type]}"></i> ${message}`;
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         function openMobileSearch() {
@@ -5757,18 +5460,12 @@
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
 
-            if (icon) {
-                if (newTheme === 'light') {
-                    icon.className = 'fas fa-moon';
-                } else {
-                    icon.className = 'fas fa-sun';
-                }
-            }
+            if (icon) icon.className = newTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
 
             showToast(`${newTheme === 'light' ? 'Light' : 'Dark'} theme activated`, 'success');
         }
 
-        // Event Listeners
+        // ========== EVENT LISTENERS ==========
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) closeModal(this.id);
@@ -5778,23 +5475,19 @@
         document.addEventListener('click', function(e) {
             const modal = document.getElementById('mobileSearchModal');
             if (modal && modal.classList.contains('active')) {
-                if (e.target.classList.contains('mobile-search-overlay')) {
-                    closeMobileSearch();
-                }
+                if (e.target.classList.contains('mobile-search-overlay')) closeMobileSearch();
             }
         });
 
         document.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'INPUT') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
             if (e.key === 'Escape') {
                 const sidebar = document.getElementById('sidebar');
-                if (sidebar && sidebar.classList.contains('active')) {
-                    closeSidebar();
-                }
+                if (sidebar && sidebar.classList.contains('active')) closeSidebar();
             }
 
-            switch(e.key) {
+            switch (e.key) {
                 case ' ':
                     e.preventDefault();
                     togglePlayPause();
@@ -5808,6 +5501,7 @@
             }
         });
 
+        // ========== SKELETON LOADER ==========
         function generateSkeletonCards(count = 6) {
             return Array.from({ length: count }, () => `
                 <div class="skeleton-card">
@@ -5826,24 +5520,18 @@
             }
         }
 
-        // ========== AUTO SCROLL TO TOP FUNCTION ==========
+        // ========== SCROLL ==========
         function scrollToTop(smooth = true) {
             if (smooth) {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 window.scrollTo(0, 0);
             }
         }
 
-        // Alternative for container scroll
         function scrollContainerToTop() {
             const container = document.querySelector('.container');
-            if (container) {
-                container.scrollTop = 0;
-            }
+            if (container) container.scrollTop = 0;
             scrollToTop(false);
         }
     </script>
